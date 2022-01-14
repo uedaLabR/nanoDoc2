@@ -94,6 +94,8 @@ def indexFiles(path):
 
 def makeParquet(indexf,ref, pathout,  thread):
 
+
+
     indexlist = indexFiles(indexf)
     blist = []
     idx = 1
@@ -110,7 +112,7 @@ def makeParquet(indexf,ref, pathout,  thread):
     # graph_manager = GraphManager('/share/data/IVT/wt.pdf')
     for tp in blist:
 
-       _makeParquet(tp)
+       _makeParquet(tp,aligner)
 
     # graph_manager.save()
 
@@ -122,8 +124,9 @@ def makeParquet(indexf,ref, pathout,  thread):
 
 
 def _makeParquet(tp):
+
     (indexcontent, pathout, ref) = tp
-    # aligner = mp.Aligner(refg, preset="map-ont")
+
 
     wholedata = []
 
@@ -131,7 +134,11 @@ def _makeParquet(tp):
     for s_line in indexcontent:
         fdata = s_line.split(",")
         onerecord = getRecord(fdata)
+
+
         if onerecord != None:
+
+
             wholedata.append(onerecord)
             cnt_1 = cnt_1 + 1
             if cnt_1 % 20 == 0:
@@ -155,6 +162,10 @@ def _makeParquet(tp):
                                'sgmean', 'sgst', 'sglen', 'bases'
                                ])
     df.to_parquet(pathout)
+
+
+
+
 
 
 def normalise(signal):
@@ -280,9 +291,9 @@ def toSeq(fastq):
 if __name__ == "__main__":
 
    path = '/share/data/IVT/m6AIvt/workspace'
-   pathout = '/share/data/IVT/m6AIvt/parquet'
+   pathout = '/data/nanopore/IVT/pqtest'
    ref = "/share/reference/Curlcake.fa"
-   indexf = "/share/data/IVT/m6AIvt/parquet/index.txt"
+   indexf = "/data/nanopore/IVT/pqtest/index.txt"
    path_w = pathout + "/sampleplingplan.txt"
 
    samplesize = 400
