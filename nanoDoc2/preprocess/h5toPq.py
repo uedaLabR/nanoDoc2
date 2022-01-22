@@ -50,7 +50,7 @@ def preprocess(f5file,pathout,ref,fmercurrent,ncore,qvaluethres):
                     r_en = hit.r_en
                     q_st = hit.q_st
                     q_en = hit.q_en
-
+                    #print(chrom,strand,r_st)
                     read = nanoDocRead(read.read_id, chrom, strand, r_st, r_en, q_st, q_en, cigar_str, fastq, trace, move,
                                 row_data)
 

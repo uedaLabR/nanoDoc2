@@ -6,6 +6,10 @@ def preprocess(read,fmercurrent):
 
     #Viterbi segmentation
     seq, cigar, left, traceboundary, frombasecaller_idx,possiblemove_idx = vs.flipplopViterbiEach(read)
+
+    # print(traceboundary)
+    # print(len(read.trace))
+
     read.cigar_str = cigar
     read.settraceboundary(traceboundary)
     #Signal Normalize

@@ -3,6 +3,7 @@ import pandas as pd
 from multiprocessing import Pool
 from functools import partial
 from nanoDoc2.utils import FileIO
+from numba import jit, njit
 
 binsize = 1000
 def getBinkey(read):
@@ -14,7 +15,6 @@ def getBinkey(read):
     #
     binkey = str(chrom)+"_"+str(strand)+"_"+str(bin)
     return binkey
-
 
 def _writeToFile(item,pathout,filename):
 
@@ -38,6 +38,7 @@ def boundaryToIntervals(traceboundary):
     # print("======")
     diff = np.clip(diff,0,65535)
     return diff
+
 
 def byteToHalf(b):
     return int((b / 256.0) * 16.0)
@@ -70,6 +71,7 @@ def convertTo16bit(trace):
         ret.append(r)
     return ret
 
+
 def toTuple(read):
 
     #
@@ -83,6 +85,7 @@ def toTuple(read):
         strand=0
     trace = convertTo16bit(read.trace)
     return read.chrom, strand, read.r_st, read.r_en,read.cigar_str,read.fastq,offset,traceintervals,trace,read.signal
+
 
 def writeToFile(pathout,ncore,reads,filename):
 
