@@ -13,29 +13,33 @@ def getLoaclInterval(exons,s):
     return localitvl
 
 
-def applyflipplopViterbi(chr, strand, s, e ,es,ee,ref2b,reads):
-
-
-    localgenome = ru.getRefG(chr, s, e, ref2b)
-    #print(localgenome)
-    retlist = []
-    for read in reads:
-
-        read = flipplopViterbiEach(read, localgenome, s, es,ee)
-        retlist.append(read)
-
-    return retlist
 
 delmargin = 50
 margin = 10
-def flipplopViterbiEach(lgenome,chrom,strand,r_st,r_en,q_st,q_en,trace,move):
+def flipplopViterbiEach(read):
+#def flipplopViterbiEach(lgenome,chrom,strand,r_st,r_en,q_st,q_en,trace,move):
 
-   #possiblemove = move
+
+# self.read_id = read_id
+# self.chrom = chrom
+# self.strand = strand
+# self.r_st = r_st
+# self.r_en = r_en
+# self.q_st = q_st
+# self.q_en = q_en
+# self.cigar_str = cigar_str
+
+    trace = read.trace
+    move  = read.move
+    lgenome = read.refgenome
+    strand = read.strand
+    q_st = read.q_st
+    q_en = read.q_en
+
     possiblemove = addPossibleChangePoint(trace, move)
     possiblemove_idx = ru.toIndex(possiblemove, SEGMENT_ALL)
     frombasecaller_idx = ru.toIndex(possiblemove, SEGMENT_FROM_BASECALLER)
     compactTrace = ru.toCompact(trace, possiblemove_idx,frombasecaller_idx)
-
 
     # if strand == -1:
     #     possiblemove = possiblemove[::-1]
@@ -44,6 +48,7 @@ def flipplopViterbiEach(lgenome,chrom,strand,r_st,r_en,q_st,q_en,trace,move):
     #     possiblemove_idx = ru.toIndex(possiblemove, SEGMENT_ALL)
 
     compactTracePositionMap = ru.toMap(possiblemove)
+
     #print("lgenome",lgenome)
     seq, cigar, left, traceboundary = viterbi(lgenome, compactTrace, trace, compactTracePositionMap,strand, q_st,q_en,
                                               possiblemove_idx,frombasecaller_idx)
@@ -88,7 +93,6 @@ def viterbi(lgenome,compactTrace,trace,compactTracePositionMap,strand,q_st,q_en,
 
             seq = seq + ru.getBase(trace, b4, bb,strand)
             traceseq.append(ru.getTrace(trace, b4, bb,strand))
-
             traceboundary.append(bb)
 
             # if strand == True:

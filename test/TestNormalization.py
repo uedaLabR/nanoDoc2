@@ -521,10 +521,10 @@ if __name__ == "__main__":
    signal_t = signal_t * a + b
    signal_v = signal_v * a + b
 
-   signal_t = np.clip(signal_t, 60, 140)
-   signal_t = np.clip(signal_v, 60, 140)
-   signal_t = signal_t -60  / 100
-   signal_v = signal_v - 60 / 100
+   signal_t = np.clip(signal_t, 60, 160)
+   signal_t = np.clip(signal_v, 60, 160)
+   signal_t = signal_t -60  / 128
+   signal_v = signal_v - 60 / 128
 
    fig = plotboth(signal_t, signal_v, tombosignalmean, signalmeans, theorymean)
    fig.savefig("/data/nanopore/testnormalize3.png")
