@@ -22,7 +22,7 @@ def _writeToFile(item,pathout,filename):
     os.makedirs(pathout + "/" + binkey, exist_ok=True)
     file_out = pathout + "/" + binkey + "/" + filename +"_pre.pq"
     df = pd.DataFrame(datalist,
-                      columns=['chr', 'strand', 'start', 'end','cigar','fastq','offset','traceintervals','trace','signal'])
+                      columns=['read_id', 'chr', 'strand', 'start', 'end','cigar','fastq','offset','traceintervals','trace','signal'])
 
     #pd.to_pickle(df, file_out)
     FileIO.writeToPq(df, file_out)
@@ -84,7 +84,7 @@ def toTuple(read):
     if strand == -1:
         strand=0
     trace = convertTo16bit(read.trace)
-    return read.chrom, strand, read.r_st, read.r_en,read.cigar_str,read.fastq,offset,traceintervals,trace,read.signal
+    return read.read_id,read.chrom, strand, read.r_st, read.r_en,read.cigar_str,read.fastq,offset,traceintervals,trace,read.signal
 
 
 def writeToFile(pathout,ncore,reads,filename):

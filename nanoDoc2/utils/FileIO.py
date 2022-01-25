@@ -6,6 +6,7 @@ def writeToPq(df,output_file):
 
     pschema = schema(
         [
+            ('read_id', string()),
             ('chr', string()),
             ('strand', bool_()),
             ('start', uint32()),
