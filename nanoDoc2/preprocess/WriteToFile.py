@@ -32,10 +32,6 @@ def boundaryToIntervals(traceboundary):
 
     arr = np.array(traceboundary)
     diff = np.diff(arr)
-    # print(arr)
-    # print("------")
-    # print(diff)
-    # print("======")
     diff = np.clip(diff,0,65535)
     return diff
 

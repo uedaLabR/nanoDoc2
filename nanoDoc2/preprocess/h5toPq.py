@@ -91,7 +91,9 @@ def records(df): return df.to_records(index=False).tolist()
 
 import pandas as pd
 import shutil
-def _mergeParquet(dir):
+def _mergeParquet(dirinfo):
+
+    pqidx,dir = dirinfo
 
     files = glob.glob(dir+"/*_pre.pq")
     data = []
@@ -106,18 +108,30 @@ def _mergeParquet(dir):
                       columns=['read_id','chr', 'strand', 'start', 'end', 'cigar', 'fastq','offset','traceintervals', 'trace','signal'])
 
     df_s = df.sort_values('start')
-    #df_s.to_parquet(dir+".pq",compression='snappy')
+    df_s = df_s.reset_index()
+    df_s = df_s.rename(columns={"index": "read_no"})
+    df_s['read_no'] = df_s.index
+
     file_out = dir+".pq"
-    FileIO.writeToPq(df_s, file_out)
+    FileIO.writeToPqWithIdx(df_s, file_out)
     shutil.rmtree(dir)
 
 def mergeParquet(pathout,ncore):
 
     dirlist = os.listdir(pathout)
-    dirlist = list(map(lambda x:pathout+"/"+x, dirlist))
+    dirlistTohandle = []
+
+    pqidx = 0
+    for dir in dirlist:
+
+        p = pathout+"/"+dir
+        pqidx = pqidx+1
+        dirlistTohandle.append((pqidx,p))
+
+
     with Pool(ncore) as p:
 
-        p.map(_mergeParquet,dirlist)
+        p.map(_mergeParquet,dirlistTohandle)
 
 
 def h5tosegmantedPq(path,pathout,ref,fmercurrent,MAX_CORE,qvaluethres):
@@ -140,13 +154,13 @@ def h5tosegmantedPq(path,pathout,ref,fmercurrent,MAX_CORE,qvaluethres):
 
 if __name__ == "__main__":
 
-    # path = '/data/nanopore/IVT/m6aIVT/multifast5/'
-    # pathout = '/data/nanopore/nanoDoc2/testCurlcakeIVT'
-    # ref = "/data/nanopore/reference/Curlcake.fa"
+    path = '/data/nanopore/IVT/m6aIVT/multifast5/'
+    pathout = '/data/nanopore/nanoDoc2/testCurlcakeIVT'
+    ref = "/data/nanopore/reference/Curlcake.fa"
 
-    path = '/data/nanopore/IVT/koreaIVT/multifast5/'
-    pathout = '/data/nanopore/nanoDoc2/testSARSCOV2'
-    ref = "/data/nanopore/reference/Cov2_Korea.fa"
+    # path = '/data/nanopore/IVT/koreaIVT/multifast5/'
+    # pathout = '/data/nanopore/nanoDoc2/testSARSCOV2'
+    # ref = "/data/nanopore/reference/Cov2_Korea.fa"
     fmercurrent = "/data/nanopore/signalStatRNA180.txt"
 
     MAX_CORE = 20

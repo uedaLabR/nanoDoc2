@@ -84,6 +84,7 @@ class PqReader:
         filelist = glob.glob(path+"/*.pq")
         #make index from parquet meta data
         self.df = None
+        self.indexes = None
         indexlist = []
         for file in filelist:
 
@@ -123,7 +124,7 @@ class PqReader:
     # ('signal', list_(uint8()))
     def load(self,chr, pos, strand):
 
-        start = pos
+        self.alldata = None
         query = 'start <= ' + str(pos) + ' & end >= ' + str(pos) + ' & chr == "' + chr + '" & strand == ' + str(strand) + ''
         pqfiles = self.df.query(query)
         data = None
@@ -139,13 +140,13 @@ class PqReader:
                 dataadd["file"] = filepath
                 data = pd.concat([data,dataadd])
 
-
-        indexs = self.randomsample(pos,data)
+        self.indexdata = data
+        self.indexes = self.randomsample(pos,data,self.maxreads)
         alldata = None
         for n, row in pqfiles.iterrows():
 
             filepath = row['filepath']
-            readids = indexs.query('file == ' +"'"+filepath+"'")['read_id'].tolist()
+            readids = self.indexes.query('file == ' +"'"+filepath+"'")['read_id'].tolist()
             #print(readids)
             filterlist = []
             filterTp = ('read_id','in',readids)
@@ -158,27 +159,80 @@ class PqReader:
                                                  'signal']).to_pandas()
                 alldata = pd.concat([alldata, alldataadd])
 
-        print(alldata)
+        self.currentData = alldata
+
+    def loadAdditional(self,addindexes):
 
 
-    def randomsample(self,pos,data):
+        pqfiles = addindexes['file'].unique()
+        alldata = None
+        for filepath in pqfiles:
 
-        data = data.query('start <='+ str(pos) +' & end >=' + str(pos))
-        data = data.sample(n=self.maxreads)
-        return data.loc[:,['file','read_id']]
+            readids = addindexes.query('file == ' + "'" + filepath + "'")['read_id'].tolist()
+            # print(readids)
+            filterlist = []
+            filterTp = ('read_id', 'in', readids)
+            filterlist.append(filterTp)
+
+            if alldata is None:
+                alldata = pq.read_table(filepath, filters=filterlist,
+                                        columns=['read_id', 'chr', 'start', 'end', 'cigar', 'offset', 'traceintervals',
+                                                 'signal']).to_pandas()
+            else:
+                alldataadd = pq.read_table(filepath, filters=filterlist,
+                                           columns=['read_id', 'chr', 'start', 'end', 'cigar', 'offset',
+                                                    'traceintervals',
+                                                    'signal']).to_pandas()
+                alldata = pd.concat([alldata, alldataadd])
+
+        if alldata is not None:
+            self.currentData = pd.concat([self.currentData, alldata])
 
 
-    def loadpq(self, chr, pos, strand):
+
+    def randomsample(self,pos,data,ntake):
+
+        datainpos = data.query('start <='+ str(pos) +' & end >=' + str(pos))
+        datainpos = datainpos.sample(n=ntake)
+        return datainpos.loc[:,['file','read_id']]
+
+    def additional_randomsample(self,pos,data,ntake,indexes):
+
+        datainpos = data.query('start <='+ str(pos) +' & end >=' + str(pos))
+        df_alreadyhave = indexes['read_id']
+        datainpos = datainpos[~datainpos.read_id.isin(df_alreadyhave)]
+        datainpos = datainpos.sample(n=ntake)
+        return datainpos.loc[:,['file','read_id']]
+
+    def checkUpdate(self,pos):
+
+        #check depth
+        count = self.currentData.query('start <='+ str(pos) +' & end >=' + str(pos))['read_id'].count()
+        print(count)
+        if count == self.maxreads:
+            return
+        countInIndex = self.indexdata.query('start <=' + str(pos) + ' & end >=' + str(pos))['read_id'].count()
+        if count == countInIndex:
+            return
+        #update
+        takecount = countInIndex - count
+        #
+        addindexes = self.additional_randomsample(pos, self.indexdata, takecount,self.indexes)
+        self.loadAdditional(addindexes)
+
+        self.indexes = pd.concat([self.indexes, addindexes])
+        #
+
+
+
+
+    def getRowData(self, chr, strand, pos):
 
         if self.currentData is None:
             self.load(chr, pos, strand)
         else:
-            self.checkUpdate()
-
-
-
-
-
+            self.checkUpdate(pos)
+        print(len(self.currentData))
 
 
 
