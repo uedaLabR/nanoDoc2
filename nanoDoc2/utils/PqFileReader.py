@@ -9,6 +9,7 @@ import numpy as np
 import itertools
 import numpy as np
 import matplotlib.pyplot as plt
+import pysam
 
 from Bio import SeqIO
 from numpy import mean, absolute
@@ -18,10 +19,12 @@ from scipy.optimize import curve_fit
 import os
 from numba import jit,u1,i8,f8
 
-DATA_LENGTH_UNIT = 60
-DATA_LENGTH = DATA_LENGTH_UNIT * 5 + 20
-
+DATA_LENGTH_UNIT = 30
+DATA_LENGTH = DATA_LENGTH_UNIT * 5 + 10
+TraceToSignalRatio = 5
 binsize = 1000
+takemargin = 50
+
 from scipy import ndimage as ndi
 import statistics
 
@@ -58,18 +61,24 @@ def binned(trimsignal, trimlength, mode=1):
 
         return ret
 
-@jit(nopython=True)
-def binnedtrace(trace, sgstarttrace, sgendtrace, binsize):
+def intervalToAbsolute(intervals):
 
     ret = []
-    for t in trace:
+    cnt = 0
+    sum = 0
+    for n in intervals:
 
-        if len(t) > 0:
-            t = t[sgstarttrace:sgendtrace]
-            t = binned(t, binsize, mode=0)
-        ret.append(t)
+        if cnt==0:
+            ret.append(0)
+            sum = sum + n
+            cnt += 1
+            continue
+        #else
+        ret.append(sum)
+        sum = sum + n
 
-    return ret
+    ret.append(sum)
+    return np.array(ret)
 
 import pyarrow.parquet as pq
 
@@ -79,14 +88,14 @@ class PqReader:
 
         self.path = path
         self.batch = None
-        self.maxreads = maxreads
-        self.currentData = None
-        filelist = glob.glob(path+"/*.pq")
+        self.maxreads = int(maxreads * 1.2)# take little more sample since some reads disqualify
+        self.maxreads_org = maxreads
+        self.bufferData = None
+        sortedfile = sorted(glob.glob(path+"/*.pq"))
         #make index from parquet meta data
-        self.df = None
-        self.indexes = None
         indexlist = []
-        for file in filelist:
+        fileidx = 0
+        for file in sortedfile:
 
             # ('read_id', string()),
             # ('chr', string()),
@@ -104,10 +113,35 @@ class PqReader:
             strandInfo = parquet_file.metadata.row_group(0).column(2).statistics.min
             startInfo = parquet_file.metadata.row_group(0).column(3).statistics.min
             endInfo = parquet_file.metadata.row_group(0).column(4).statistics.max
-            indexlist.append((file,chrInfo,strandInfo,startInfo,endInfo))
+            indexlist.append((fileidx,chrInfo,strandInfo,startInfo,endInfo))
+            fileidx +=1
 
-        self.df = pd.DataFrame(indexlist,
-                          columns=['filepath', 'chr','strand','start','end'])
+        self.indexdf = pd.DataFrame(indexlist,
+                          columns=['fileidx','chr','strand','start','end'])
+
+
+    def randomsample(self, pos, data, ntake, indexes):
+
+        if indexes is None:
+
+            #print('init read')
+            datainpos = data.query('start <=' + str(pos-takemargin) + ' & end >=' + str(pos+takemargin))
+            datainpos = datainpos.sample(n=ntake)
+            return datainpos.loc[:, ['fileidx', 'read_id']]
+
+        else:
+
+            datainpos = data.query('start <=' + str(pos-takemargin) + ' & end >=' + str(pos+takemargin))
+            df_alreadyhave = indexes['read_id']
+            datainpos = datainpos[~datainpos.read_id.isin(df_alreadyhave)]
+            cnt = ntake - len(datainpos)
+            if cnt > 0:
+                datainpos = datainpos.sample(n=cnt)
+                #print(cnt,len(datainpos))
+                return datainpos.loc[:, ['fileidx', 'read_id']]
+            else:
+                #print('return none')
+                return None
 
 
 
@@ -124,204 +158,176 @@ class PqReader:
     # ('signal', list_(uint8()))
     def load(self,chr, pos, strand):
 
-        self.alldata = None
-        query = 'start <= ' + str(pos) + ' & end >= ' + str(pos) + ' & chr == "' + chr + '" & strand == ' + str(strand) + ''
-        pqfiles = self.df.query(query)
-        data = None
+        #extract parquet file contain reads in this region
+        query = 'start <= ' + str(pos) + ' & end >= ' + str(pos) + ' & chr == "' + chr + '" & strand == ' + str(
+            strand) + ''
+        pqfiles = self.indexdf.query(query)
+        #
+        sortedfile = sorted(glob.glob(self.path + "/*.pq"))
+        #
+        indexdata = None
         for index, row in pqfiles.iterrows():
 
-            filepath = row['filepath']
-            print(filepath)
-            if data is None:
-                data = pq.read_table(filepath, columns=['read_id','chr', 'strand','start','end']).to_pandas()
-                data["file"] = filepath
+            fileidx = row['fileidx']
+            filepath = sortedfile[fileidx]
+
+            if indexdata is None:
+                indexdata = pq.read_table(filepath, columns=['read_id', 'chr', 'strand', 'start', 'end']).to_pandas()
+                indexdata['fileidx'] = fileidx
+
             else:
-                dataadd = pq.read_table(filepath, columns=['read_id','chr', 'strand','start','end']).to_pandas()
-                dataadd["file"] = filepath
-                data = pd.concat([data,dataadd])
+                dataadd = pq.read_table(filepath, columns=['read_id', 'chr', 'strand', 'start', 'end']).to_pandas()
+                dataadd['fileidx'] = fileidx
+                indexdata = pd.concat([indexdata, dataadd])
 
-        self.indexdata = data
-        self.indexes = self.randomsample(pos,data,self.maxreads)
-        alldata = None
-        for n, row in pqfiles.iterrows():
+        # get reads ids for bufferted position (start,end)
+        start = pos
+        end = ((pos // binsize)+1) * binsize
+        if not strand:
+            start = (pos // binsize) * binsize
+            end = pos
 
-            filepath = row['filepath']
-            readids = self.indexes.query('file == ' +"'"+filepath+"'")['read_id'].tolist()
-            #print(readids)
-            filterlist = []
-            filterTp = ('read_id','in',readids)
-            filterlist.append(filterTp)
-            if alldata is None:
-                alldata = pq.read_table(filepath, filters=filterlist, columns=['read_id', 'chr', 'start', 'end','cigar','offset','traceintervals','signal']).to_pandas()
-            else:
-                alldataadd = pq.read_table(filepath, filters=filterlist,
-                                        columns=['read_id', 'chr', 'start', 'end', 'cigar', 'offset', 'traceintervals',
-                                                 'signal']).to_pandas()
-                alldata = pd.concat([alldata, alldataadd])
+        readsIndex = None
+        ntake = self.maxreads
+        # get readid to reads for bin interval batch
+        for n in range(start,end):
 
-        self.currentData = alldata
+            addIndex = self.randomsample(pos, indexdata, ntake, readsIndex)
+            if readsIndex is None:
+                readsIndex = addIndex
+            elif addIndex is not None:
+                readsIndex = pd.concat([readsIndex, addIndex])
 
-    def loadAdditional(self,addindexes):
+        #print("start reading file")
+        # read data with row signal
+        fileindexes = readsIndex['fileidx'].unique()
+        dataWithRow = None
+        for findex in fileindexes:
 
-
-        pqfiles = addindexes['file'].unique()
-        alldata = None
-        for filepath in pqfiles:
-
-            readids = addindexes.query('file == ' + "'" + filepath + "'")['read_id'].tolist()
-            # print(readids)
+            filepath = sortedfile[findex]
+            readids = readsIndex['read_id']
             filterlist = []
             filterTp = ('read_id', 'in', readids)
             filterlist.append(filterTp)
+            columns = ['read_id', 'chr', 'strand', 'start', 'end', 'cigar', 'offset', 'traceintervals', 'signal']
+            if dataWithRow is None:
+                dataWithRow = pq.read_table(filepath, filters=filterlist, columns=columns).to_pandas()
 
-            if alldata is None:
-                alldata = pq.read_table(filepath, filters=filterlist,
-                                        columns=['read_id', 'chr', 'start', 'end', 'cigar', 'offset', 'traceintervals',
-                                                 'signal']).to_pandas()
             else:
-                alldataadd = pq.read_table(filepath, filters=filterlist,
-                                           columns=['read_id', 'chr', 'start', 'end', 'cigar', 'offset',
-                                                    'traceintervals',
-                                                    'signal']).to_pandas()
-                alldata = pd.concat([alldata, alldataadd])
+                dataadd = pq.read_table(filepath, filters=filterlist, columns=columns).to_pandas()
+                dataWithRow = pd.concat([dataWithRow, dataadd])
 
-        if alldata is not None:
-            self.currentData = pd.concat([self.currentData, alldata])
-
-
-
-    def randomsample(self,pos,data,ntake):
-
-        datainpos = data.query('start <='+ str(pos) +' & end >=' + str(pos))
-        datainpos = datainpos.sample(n=ntake)
-        return datainpos.loc[:,['file','read_id']]
-
-    def additional_randomsample(self,pos,data,ntake,indexes):
-
-        datainpos = data.query('start <='+ str(pos) +' & end >=' + str(pos))
-        df_alreadyhave = indexes['read_id']
-        datainpos = datainpos[~datainpos.read_id.isin(df_alreadyhave)]
-        datainpos = datainpos.sample(n=ntake)
-        return datainpos.loc[:,['file','read_id']]
-
-    def checkUpdate(self,pos):
-
-        #check depth
-        count = self.currentData.query('start <='+ str(pos) +' & end >=' + str(pos))['read_id'].count()
-        print(count)
-        if count == self.maxreads:
-            return
-        countInIndex = self.indexdata.query('start <=' + str(pos) + ' & end >=' + str(pos))['read_id'].count()
-        if count == countInIndex:
-            return
-        #update
-        takecount = countInIndex - count
-        #
-        addindexes = self.additional_randomsample(pos, self.indexdata, takecount,self.indexes)
-        self.loadAdditional(addindexes)
-
-        self.indexes = pd.concat([self.indexes, addindexes])
-        #
-
+        dataWithRow['traceintervals'] = dataWithRow['traceintervals'] .apply(intervalToAbsolute)
+        self.bufferData = dataWithRow
 
 
 
     def getRowData(self, chr, strand, pos):
 
-        if self.currentData is None:
+        if self.bufferData is None or (pos // binsize) == 0:
             self.load(chr, pos, strand)
-        else:
-            self.checkUpdate(pos)
-        print(len(self.currentData))
 
+        sampled, sampledlen = self.getFormattedData(strand, pos)
+        if sampledlen > self.maxreads_org:
+            sampled = sampled[0:self.maxreads_org]
+        return sampled , len(sampled)
 
+    import pysam
+    def correctCigar(self,targetPos,cigar):
 
+        a = pysam.AlignedSegment()
+        a.cigarstring = cigar
+        refpos = 0
+        relpos = 0
+        for cigaroprator, cigarlen in a.cigar:
 
-    def getData(self, chr, strand, pos, maxtake):
+            if cigaroprator == 0:  # match
 
-        print('maxtake',maxtake,chr,pos)
-        unitwidth = DATA_LENGTH_UNIT
-        self.checkUpdate(chr, pos, strand)
-        if self.pq is None:
+                if refpos + cigarlen > targetPos:
+                    return relpos + (targetPos - refpos)
+
+                relpos = relpos + cigarlen
+                refpos = refpos + cigarlen
+
+            elif cigaroprator == 2:  # Del
+                refpos = refpos + cigarlen
+            elif cigaroprator == 1 or cigaroprator == 3:  # Ins or N
+                relpos = relpos + cigarlen
+
+        return 0
+
+    def getRelativePos(self,strand,start,end,cigar,pos,traceintervalLen):
+
+        #tp = (strand,start,end,cigar,pos,traceintervalLen)
+        rel = pos - start
+        rel = self.correctCigar(rel,cigar)
+        start = rel
+        if start < 2:
+            # do not use lower end
             return None
 
-        pqlen = len(self.pq)
-        _pq = self.pq
-        print("pqlen=",len(_pq))
+        end = rel + 6
+        if end >= traceintervalLen:
+            end = traceintervalLen-1
+        if start == end:
+            return None
+
+        # print(tp)
+        # print("start end",start,end)
+        return start,end
+
+
+    def calcStartEnd(self,strand,start,end,cigar,pos,offset,traceintervals):
+
+        rp = self.getRelativePos(strand,start,end,cigar,pos,len(traceintervals))
+        if rp is None:
+            return None
+
+        relativeStart, relativeEnd = rp
+        # print("relativeStart, relativeEnd",relativeStart, relativeEnd)
+        # print(traceintervals)
+        if relativeEnd >= len(traceintervals) or relativeStart >= len(traceintervals):
+            return None
+        sig_start = offset + traceintervals[relativeStart] * TraceToSignalRatio
+        sig_end = offset + traceintervals[relativeEnd] * TraceToSignalRatio
+
+        return sig_start,sig_end
+
+
+
+
+    def getOneRow(self,row,strand, pos):
+
+        chr = row['chr']
+        start = row['start']
+        end = row['end']
+        cigar = row['cigar']
+        offset = row['offset']
+        traceintervals = row['traceintervals']
+        signal = row['signal']
+        #
+        sted = self.calcStartEnd(strand,start,end,cigar,pos,offset,traceintervals)
+        if sted is None:
+            return None
+        sig_start, sig_end = sted
+        #print(sig_start, sig_end)
+        signal = signal[sig_start:sig_end]
+        #print(signal)
+        #
+        binnedSignal = binned(signal, DATA_LENGTH)
+        return binnedSignal
+
+    def getFormattedData(self, strand, pos):
+
         data = []
-        tracedata = []
-        takecnt = 0
-        dftake = _pq.sample(frac=1)
-        for index, row in dftake.iterrows():
+        takecnt = 1
+        for index, row in self.bufferData.iterrows():
 
-            mapped_chrom = row['mapped_chrom']
-            mapped_start = row['mapped_start']
-            mapped_end = row['mapped_end']
-            #'signal', 'trace', 'sgmean', 'sgst', 'sglen'
-            sgst = row['sgst']
+            rowdata = self.getOneRow(row, strand, pos)
+            if rowdata  is not None:
+                data.append((takecnt, rowdata))
+                takecnt = takecnt + 1
 
-            if strand == "-":
-
-                relpos = mapped_end - pos
-                if relpos < 0:
-                    continue
-                if pos - 7 < mapped_start:
-                    continue
-                if relpos+7 >= len(sgst):
-                    continue
-
-                sgstart = sgst[relpos]
-                sgend = sgst[relpos+7]
-                signal = row['signal'][sgstart:sgend]
-                if signal is not None and len(signal)> 50:
-                    signal = binned(signal, 420)
-                if signal is not None and len(signal) == 420:
-                    data.append(signal)
-                    takecnt = takecnt + 1
-
-                # trace = row['trace']
-                # #
-                # trace = np.reshape(trace, (8, -1))
-                # #print(trace.shape)
-                # sgstarttrace = (sgstart - sgst[0]) // 10
-                # sgendtrace = (sgend - sgst[0]) // 10
-                #
-                # trace = binnedtrace(trace, sgstarttrace, sgendtrace, 42)
-                # tracedata.append(trace)
-
-            else:
-
-                relpos = pos - mapped_start
-                if relpos < 0:
-                    continue
-                if pos + 7 > mapped_end:
-                    continue
-                if relpos+7 >= len(sgst):
-                    continue
-
-                sgstart = sgst[relpos]
-                sgend = sgst[relpos+7]
-                signal = row['signal'][sgstart:sgend]
-                if signal is not None and len(signal)> 50:
-                    signal = binned(signal, 420)
-                if signal is not None and len(signal) == 420:
-                    data.append((takecnt,signal))
-                    takecnt = takecnt + 1
-
-                # trace = row['trace']
-                # #
-                # trace = np.reshape(trace, (8, -1))
-                # #print(trace.shape)
-                #
-                # sgstarttrace = (sgstart - sgst[0]) // 10
-                # sgendtrace = (sgend - sgst[0]) // 10
-                # trace = binnedtrace(trace,sgstarttrace,sgendtrace,42)
-                # tracedata.append(trace)
-
-            if takecnt == maxtake:
-                break
-
-        print(chr,pos,len(data),maxtake)
-        return data,len(data)
+        return  data,len(data)
 
 

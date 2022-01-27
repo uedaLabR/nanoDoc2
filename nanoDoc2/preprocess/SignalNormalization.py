@@ -75,22 +75,25 @@ def predictShift(a,b):
 
 def calcNormalizeScaleLMS(signalmeans,theorymean):
 
-    y1 = 0
-    y2 = 0
-    y2_pow2 = 0
-    y1y2 = 0
-    n_len = len(signalmeans)
-    for n in range(len(signalmeans)):
+    try:
+        y1 = 0
+        y2 = 0
+        y2_pow2 = 0
+        y1y2 = 0
+        n_len = len(signalmeans)
+        for n in range(len(signalmeans)):
 
-        y1 = y1 + theorymean[n]
-        y2 = y2 + signalmeans[n]
-        y1y2 = y1y2 + y1*y2
-        y2_pow2 = y2_pow2 + y2*y2
+            y1 = y1 + theorymean[n]
+            y2 = y2 + signalmeans[n]
+            y1y2 = y1y2 + y1*y2
+            y2_pow2 = y2_pow2 + y2*y2
 
-    a = [[y2_pow2, y2], [y2, n_len]]
-    ainv = np.linalg.inv(a)
-    b = np.array([[y1y2], [y1]])
-    return np.dot(ainv, b)
+        a = [[y2_pow2, y2], [y2, n_len]]
+        ainv = np.linalg.inv(a)
+        b = np.array([[y1y2], [y1]])
+        return np.dot(ainv, b)
+    except:
+        return None
 
 def moda(a,shift):
 
@@ -122,7 +125,45 @@ def normalizeSignal(read,traceboundary,fmercurrent):
     signalmeans = getMeans(signal,traceboundary)
     theorymean = theoryMean(fmercurrent, lgenome)
     shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
+    start = 0
+    end = 50
+    scaleshifts = []
+    while end + 25 < len():
+
+        scaleshift = calcNormalizeScaleLMS(signalmeans[start:end], theorymean[start:end])
+        if scaleshift is None:
+            scaleshifts.append(None)
+        # by each 25 base 50 nt interval calculate a,b
+        start = start + 25
+        end = end + 25
+        a = scaleshift[0][0]
+        b = scaleshift[1][0]
+        scaleshifts.append((a,b))
+
+
+    signal = signal * a + b
+    signal = np.clip(signal, low_limit, high_limit)
+    signal = signal - low_limit
+    signal = (signal / (high_limit-low_limit)) * 255
+    downsamplesize = len(signal) // 2 #half the size
+    signal = downsample(signal, downsamplesize)
+    signal = signal.astype(np.uint8)
+    return signal
+
+def normalizeSignal_old(read,traceboundary,fmercurrent):
+
+    low_limit = 60
+    high_limit = 160
+
+    lgenome = read.refgenome
+    signal = read.signal
+
+    signalmeans = getMeans(signal,traceboundary)
+    theorymean = theoryMean(fmercurrent, lgenome)
+    shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
     scaleshift = calcNormalizeScaleLMS(signalmeans, theorymean)
+    #do it by 50 bp bin
+
     a = scaleshift[0][0]
     b = scaleshift[1][0]
     signal = signal * a + b
