@@ -14,6 +14,5 @@ def preprocess(read,fmercurrent):
     read.settraceboundary(traceboundary)
     #Signal Normalize
     read.signal = ss.normalizeSignal(read,traceboundary,fmercurrent)
-
     return read
 

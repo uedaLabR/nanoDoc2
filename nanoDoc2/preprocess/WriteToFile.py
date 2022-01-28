@@ -61,11 +61,8 @@ def to16bit(a_trace):
 
 def convertTo16bit(trace):
 
-    ret = []
-    for t in trace:
-        r = to16bit(t)
-        ret.append(r)
-    return ret
+    return np.array(list(map(to16bit, trace)))
+
 
 
 def toTuple(read):

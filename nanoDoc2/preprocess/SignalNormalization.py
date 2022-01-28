@@ -113,10 +113,45 @@ def downsample(array, npts):
     downsampled = interpolated(np.linspace(0, len(array), npts))
     return downsampled
 
-from scipy.interpolate import interp1d
+def getFunction(scaleshifts,traceboundary,window,step):
+
+    cnt = 0
+    unit = 5
+
+    x = []
+    y1 = []
+    y2 = []
+    for v in  scaleshifts:
+        if v is None:
+            cnt+=step
+            continue
+        a,b = v
+        x0 = (traceboundary[cnt]*unit + traceboundary[cnt+window]*unit)/2
+        cnt+=step
+        x.append(x0)
+        y1.append(a)
+        y2.append(b)
+
+    f1 = interpolate.interp1d(x, y1, kind="cubic",fill_value="extrapolate")
+    f2 = interpolate.interp1d(x, y2, kind="cubic",fill_value="extrapolate")
+    return f1,f2
+
+
 def normalizeSignal(read,traceboundary,fmercurrent):
 
-    low_limit = 60
+    try:
+        ret = _normalizeSignal(read,traceboundary,fmercurrent)
+        #print("success")
+        return ret
+
+    except:
+        print("error in normalization, use old method to normalize")
+    return  normalizeSignal_old(read,traceboundary,fmercurrent)
+
+from scipy.interpolate import interp1d
+def _normalizeSignal(read,traceboundary,fmercurrent):
+
+    low_limit = 50
     high_limit = 160
 
     lgenome = read.refgenome
@@ -125,28 +160,37 @@ def normalizeSignal(read,traceboundary,fmercurrent):
     signalmeans = getMeans(signal,traceboundary)
     theorymean = theoryMean(fmercurrent, lgenome)
     shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
+    window = 30
+    step = 5
     start = 0
-    end = 50
+    end = window
     scaleshifts = []
-    while end + 25 < len():
+    while (end + step) < len(signalmeans):
 
         scaleshift = calcNormalizeScaleLMS(signalmeans[start:end], theorymean[start:end])
         if scaleshift is None:
             scaleshifts.append(None)
         # by each 25 base 50 nt interval calculate a,b
-        start = start + 25
-        end = end + 25
+        start = start + step
+        end = end + step
         a = scaleshift[0][0]
         b = scaleshift[1][0]
         scaleshifts.append((a,b))
 
+    functionA,functionB = getFunction(scaleshifts,traceboundary,window,step)
+    num = np.arange(len(signal))
+    a_ary = np.frompyfunc(functionA, 1, 1)(num) #mean
+    b_ary = np.frompyfunc(functionB, 1, 1)(num) #sd
+    signal = signal * a_ary + b_ary
 
-    signal = signal * a + b
     signal = np.clip(signal, low_limit, high_limit)
-    signal = signal - low_limit
-    signal = (signal / (high_limit-low_limit)) * 255
+    signal = ((signal-low_limit) / (high_limit-low_limit)) * 255
+    signal = np.around(signal.astype(np.float), 0)
+
     downsamplesize = len(signal) // 2 #half the size
     signal = downsample(signal, downsamplesize)
+
+    signal = np.clip(signal, 0, 255)
     signal = signal.astype(np.uint8)
     return signal
 
