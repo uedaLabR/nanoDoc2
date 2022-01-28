@@ -454,6 +454,8 @@ def getFunction(scaleshifts,traceboundary,window,step):
             cnt+=step
             continue
         a,b = v
+        if len(traceboundary) <= cnt+window:
+            break
         x0 = (traceboundary[cnt]*unit + traceboundary[cnt+window]*unit)/2
         cnt+=step
         x.append(x0)
@@ -541,8 +543,8 @@ if __name__ == "__main__":
 
 
    shift,signalmeans,theorymean = predictShift(signalmeans,theorymean)
-   window = 30
-   step = 5
+   window = 20
+   step = 4
    start = 0
    end = window
    scaleshifts = []
@@ -558,6 +560,8 @@ if __name__ == "__main__":
        b = scaleshift[1][0]
        print((a,b))
        scaleshifts.append((a, b))
+   for n in range(5):
+       scaleshifts.append((a, b))  ##add same value as last for 5 times to cover window
 
    functionA, functionB = getFunction(scaleshifts, traceboundary, window, step)
    num = np.arange(len(signal_t))

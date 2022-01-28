@@ -13,7 +13,7 @@ def getMeans(signal,traceboundary):
 
     means = []
     tbb4 = 0
-    unit = 5
+    unit = 10
     for tb in traceboundary:
 
         if (tb == 0) or (tbb4 == tb):
@@ -116,7 +116,7 @@ def downsample(array, npts):
 def getFunction(scaleshifts,traceboundary,window,step):
 
     cnt = 0
-    unit = 5
+    unit = 10
 
     x = []
     y1 = []
@@ -126,6 +126,10 @@ def getFunction(scaleshifts,traceboundary,window,step):
             cnt+=step
             continue
         a,b = v
+
+        if len(traceboundary) <= cnt+window:
+            break
+
         x0 = (traceboundary[cnt]*unit + traceboundary[cnt+window]*unit)/2
         cnt+=step
         x.append(x0)
@@ -160,8 +164,8 @@ def _normalizeSignal(read,traceboundary,fmercurrent):
     signalmeans = getMeans(signal,traceboundary)
     theorymean = theoryMean(fmercurrent, lgenome)
     shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
-    window = 30
-    step = 5
+    window = 20
+    step = 4
     start = 0
     end = window
     scaleshifts = []
@@ -176,6 +180,8 @@ def _normalizeSignal(read,traceboundary,fmercurrent):
         a = scaleshift[0][0]
         b = scaleshift[1][0]
         scaleshifts.append((a,b))
+    for n in range(4):
+        scaleshifts.append((a, b)) ##add same value as last for 5 times to cover window
 
     functionA,functionB = getFunction(scaleshifts,traceboundary,window,step)
     num = np.arange(len(signal))
@@ -196,7 +202,7 @@ def _normalizeSignal(read,traceboundary,fmercurrent):
 
 def normalizeSignal_old(read,traceboundary,fmercurrent):
 
-    low_limit = 60
+    low_limit = 50
     high_limit = 160
 
     lgenome = read.refgenome
