@@ -132,8 +132,8 @@ def getFunction(scaleshifts,traceboundary,window,step):
         y1.append(a)
         y2.append(b)
 
-    f1 = interpolate.interp1d(x, y1, kind="cubic",fill_value="extrapolate")
-    f2 = interpolate.interp1d(x, y2, kind="cubic",fill_value="extrapolate")
+    f1 = interpolate.interp1d(x, y1, kind="quadratic",fill_value="extrapolate")
+    f2 = interpolate.interp1d(x, y2, kind="quadratic",fill_value="extrapolate")
     return f1,f2
 
 
