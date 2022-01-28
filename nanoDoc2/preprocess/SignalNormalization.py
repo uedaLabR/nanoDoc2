@@ -155,7 +155,7 @@ def normalizeSignal(read,traceboundary,fmercurrent):
 from scipy.interpolate import interp1d
 def _normalizeSignal(read,traceboundary,fmercurrent):
 
-    low_limit = 50
+    low_limit = 40
     high_limit = 160
 
     lgenome = read.refgenome
@@ -164,11 +164,13 @@ def _normalizeSignal(read,traceboundary,fmercurrent):
     signalmeans = getMeans(signal,traceboundary)
     theorymean = theoryMean(fmercurrent, lgenome)
     shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
-    window = 20
+    window = 30
     step = 4
     start = 0
     end = window
     scaleshifts = []
+    a_for_max_min = []
+    b_for_max_min = []
     while (end + step) < len(signalmeans):
 
         scaleshift = calcNormalizeScaleLMS(signalmeans[start:end], theorymean[start:end])
@@ -180,13 +182,19 @@ def _normalizeSignal(read,traceboundary,fmercurrent):
         a = scaleshift[0][0]
         b = scaleshift[1][0]
         scaleshifts.append((a,b))
-    for n in range(4):
-        scaleshifts.append((a, b)) ##add same value as last for 5 times to cover window
+        a_for_max_min.append(a)
+        b_for_max_min.append(b)
+
 
     functionA,functionB = getFunction(scaleshifts,traceboundary,window,step)
     num = np.arange(len(signal))
     a_ary = np.frompyfunc(functionA, 1, 1)(num) #mean
     b_ary = np.frompyfunc(functionB, 1, 1)(num) #sd
+
+    # in order to avoid at adjustment with overfitting on both end
+    a_ary = np.clip(a_ary, max(a_for_max_min), min(a_for_max_min))
+    b_ary = np.clip(b_ary, max(b_for_max_min), min(b_for_max_min))
+
     signal = signal * a_ary + b_ary
 
     signal = np.clip(signal, low_limit, high_limit)

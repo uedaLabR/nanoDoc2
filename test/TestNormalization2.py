@@ -543,11 +543,13 @@ if __name__ == "__main__":
 
 
    shift,signalmeans,theorymean = predictShift(signalmeans,theorymean)
-   window = 20
+   window = 30
    step = 4
    start = 0
    end = window
    scaleshifts = []
+   a_a = []
+   b_a = []
    while (end + step) < len(signalmeans):
 
        scaleshift = calcNormalizeScaleLMS(signalmeans[start:end], theorymean[start:end])
@@ -560,22 +562,26 @@ if __name__ == "__main__":
        b = scaleshift[1][0]
        print((a,b))
        scaleshifts.append((a, b))
-   for n in range(5):
-       scaleshifts.append((a, b))  ##add same value as last for 5 times to cover window
+       a_a.append(a)
+       b_a.append(b)
+
 
    functionA, functionB = getFunction(scaleshifts, traceboundary, window, step)
    num = np.arange(len(signal_t))
    a_ary = np.frompyfunc(functionA, 1, 1)(num)  # mean
    b_ary = np.frompyfunc(functionB, 1, 1)(num)  # sd
+   a_ary = np.clip(a_ary,max(a_a),min(a_a))
+   b_ary = np.clip(a_ary, max(b_a), min(b_a))
+
    signal_t  = signal_t * a_ary + b_ary
    print(len(signal_t))
    print(len(signal_v))
 
 
-   signal_t = np.clip(signal_t, 50, 160)
-   signal_v = np.clip(signal_v, 50, 160)
+   signal_t = np.clip(signal_t, 40, 160)
+   signal_v = np.clip(signal_v, 40, 160)
 
-   signal_t = ((signal_t - 50) / (160 - 50)) * 255
+   signal_t = ((signal_t - 40) / (160 - 40)) * 255
    print(signal_t)
    signal_t = np.around(signal_t.astype(np.double), 0)
 
