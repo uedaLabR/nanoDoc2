@@ -27,7 +27,7 @@ def getMeans(signal,traceboundary):
 
     return means
 
-def theoryMean(fmercurrent,lgenome):
+def theoryMean(fmercurrent,lgenome,strand):
 
     a = {}
     with open(fmercurrent) as f:
@@ -39,15 +39,26 @@ def theoryMean(fmercurrent,lgenome):
             cnt = cnt+1
 
     means = []
-    rg = lgenome[::-1]
-    for n in range(0,len(rg)-5):
+    if strand == "-":
 
-       fmer = rg[n:n+5]
-       cv = a[fmer]
-       means.append(cv)
+        rg = lgenome
+        for n in range(0, len(rg) - 5):
+            fmer = rg[n:n + 5]
+            cv = a[fmer]
+            means.append(cv)
 
+    else:
 
-    means.reverse()
+        #plus strand
+        rg = lgenome[::-1]
+        for n in range(0,len(rg)-5):
+
+           fmer = rg[n:n+5]
+           cv = a[fmer]
+           means.append(cv)
+
+        means.reverse()
+
     return means
 
 def predictShift(a,b):
@@ -160,9 +171,10 @@ def _normalizeSignal(read,traceboundary,fmercurrent):
 
     lgenome = read.refgenome
     signal = read.signal
+    strand = read.strand
 
     signalmeans = getMeans(signal,traceboundary)
-    theorymean = theoryMean(fmercurrent, lgenome)
+    theorymean = theoryMean(fmercurrent, lgenome ,strand)
     shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
     window = 30
     step = 4
