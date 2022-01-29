@@ -176,8 +176,8 @@ def _normalizeSignal(read,traceboundary,fmercurrent):
     signalmeans = getMeans(signal,traceboundary)
     theorymean = theoryMean(fmercurrent, lgenome ,strand)
     shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
-    window = 30
-    step = 4
+    window = 40
+    step = 10
     start = 0
     end = window
     scaleshifts = []
@@ -227,9 +227,10 @@ def normalizeSignal_old(read,traceboundary,fmercurrent):
 
     lgenome = read.refgenome
     signal = read.signal
+    strand = read.strand
 
     signalmeans = getMeans(signal,traceboundary)
-    theorymean = theoryMean(fmercurrent, lgenome)
+    theorymean = theoryMean(fmercurrent, lgenome,strand)
     shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
     scaleshift = calcNormalizeScaleLMS(signalmeans, theorymean)
     #do it by 50 bp bin

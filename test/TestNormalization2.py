@@ -543,8 +543,8 @@ if __name__ == "__main__":
 
 
    shift,signalmeans,theorymean = predictShift(signalmeans,theorymean)
-   window = 30
-   step = 4
+   window = 40
+   step = 10
    start = 0
    end = window
    scaleshifts = []
