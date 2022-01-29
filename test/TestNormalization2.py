@@ -577,7 +577,7 @@ if __name__ == "__main__":
    elapsed_time = end_time - start_time
    print("predice shift",elapsed_time)
 
-   window = 50
+   window = 80
    step = 5
    start = 0
    end = window

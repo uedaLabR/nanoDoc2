@@ -184,7 +184,7 @@ def _normalizeSignal(read,traceboundary,fmercurrent):
     signalmeans = getMeans(signal,traceboundary)
     theorymean = theoryMean(fmercurrent, lgenome ,strand)
     shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
-    window = 30
+    window = 80
     step = 5
     start = 0
     end = window
