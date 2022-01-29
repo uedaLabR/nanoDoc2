@@ -211,8 +211,8 @@ def _normalizeSignal(read,traceboundary,fmercurrent):
 
     functionA,functionB = getFunction(scaleshifts,traceboundary,window,step)
     num = np.arange(len(signal))
-    a_ary = np.frompyfunc(functionA, 1, 1)(num) #mean
-    b_ary = np.frompyfunc(functionB, 1, 1)(num) #sd
+    a_ary = functionA(num) #mean
+    b_ary = functionB(num) #sd
 
     # in order to avoid at adjustment with overfitting on both end
     a_ary = np.clip(a_ary, max(a_for_max_min), min(a_for_max_min))

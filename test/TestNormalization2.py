@@ -465,8 +465,8 @@ def getFunction(scaleshifts,traceboundary,window,step):
         y1.append(a)
         y2.append(b)
 
-    f1 = interpolate.interp1d(x, y1, kind="linear",fill_value="extrapolate")
-    f2 = interpolate.interp1d(x, y2, kind="linear",fill_value="extrapolate")
+    f1 = interpolate.interp1d(x, y1, kind="quadratic",fill_value="extrapolate")
+    f2 = interpolate.interp1d(x, y2, kind="quadratic",fill_value="extrapolate")
     return f1,f2
 
 from scipy.interpolate import interp1d
@@ -628,12 +628,18 @@ if __name__ == "__main__":
    end_time = time.process_time()
    elapsed_time = end_time - start_time
    print("after function d",elapsed_time)
-   b_ary = np.frompyfunc(functionB, 1, 1)(num)  # sd
+   b_ary = functionB(num)  # sd
    end_time = time.process_time()
    elapsed_time = end_time - start_time
    print("after function e",elapsed_time)
-   a_ary = np.frompyfunc(functionA, 1, 1)(num)  # mean
+   a_ary = functionA(num)  # mean
+   end_time = time.process_time()
+   elapsed_time = end_time - start_time
+   print("after function f",elapsed_time)
    #a_ary,b_ary = getArys(functionA,functionA,len(signal_t))
+   end_time = time.process_time()
+   elapsed_time = end_time - start_time
+   print("after function g",elapsed_time)
    a_ary = np.clip(a_ary,max(a_a),min(a_a))
    b_ary = np.clip(b_ary, max(b_a), min(b_a))
 
