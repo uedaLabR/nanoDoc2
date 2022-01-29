@@ -577,7 +577,7 @@ if __name__ == "__main__":
    elapsed_time = end_time - start_time
    print("predice shift",elapsed_time)
 
-   window = 30
+   window = 50
    step = 5
    start = 0
    end = window
@@ -646,8 +646,10 @@ if __name__ == "__main__":
    end_time = time.process_time()
    elapsed_time = end_time - start_time
    print("after function g",elapsed_time)
-   a_ary = np.clip(a_ary,max(a_a),min(a_a))
-   b_ary = np.clip(b_ary, max(b_a), min(b_a))
+   a_ary = np.clip(a_ary,min(a_a),max(a_a))
+   b_ary = np.clip(b_ary, min(b_a), max(b_a))
+   print(max(a_a),min(a_a),max(b_a), min(b_a))
+   print(max(a_ary), min(a_ary), max(b_ary), min(b_ary))
 
    end_time = time.process_time()
    elapsed_time = end_time - start_time

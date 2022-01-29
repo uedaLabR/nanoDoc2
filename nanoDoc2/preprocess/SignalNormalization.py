@@ -215,8 +215,8 @@ def _normalizeSignal(read,traceboundary,fmercurrent):
     b_ary = functionB(num) #sd
 
     # in order to avoid at adjustment with overfitting on both end
-    a_ary = np.clip(a_ary, max(a_for_max_min), min(a_for_max_min))
-    b_ary = np.clip(b_ary, max(b_for_max_min), min(b_for_max_min))
+    a_ary = np.clip(a_ary, min(a_for_max_min), max(a_for_max_min))
+    b_ary = np.clip(b_ary, min(b_for_max_min), max(b_for_max_min))
 
     signal = signal * a_ary + b_ary
 
