@@ -163,6 +163,6 @@ if __name__ == "__main__":
     # ref = "/data/nanopore/reference/Cov2_Korea.fa"
     fmercurrent = "/data/nanopore/signalStatRNA180.txt"
 
-    MAX_CORE = 20
+    MAX_CORE = 24
     qvaluethres = 5
     h5tosegmantedPq(path,pathout,ref,fmercurrent,MAX_CORE,qvaluethres)

@@ -127,7 +127,7 @@ def downsample(array, npts):
 def getFunction(scaleshifts,traceboundary,window,step):
 
     cnt = 0
-    unit = 10
+    unit = 5 # apply after down sampled
 
     x = []
     y1 = []
@@ -147,20 +147,28 @@ def getFunction(scaleshifts,traceboundary,window,step):
         y1.append(a)
         y2.append(b)
 
-    f1 = interpolate.interp1d(x, y1, kind="quadratic",fill_value="extrapolate")
-    f2 = interpolate.interp1d(x, y2, kind="quadratic",fill_value="extrapolate")
+    try:
+        f1 = interpolate.interp1d(x, y1, kind="quadratic",fill_value="extrapolate")
+        f2 = interpolate.interp1d(x, y2, kind="quadratic",fill_value="extrapolate")
+        #print("pass1")
+
+    except  Exception as e:
+
+        f1 = interpolate.interp1d(x, y1, kind="slinear",fill_value="extrapolate")
+        f2 = interpolate.interp1d(x, y2, kind="slinear",fill_value="extrapolate")
+        #print("pass2")
+
     return f1,f2
 
 
 def normalizeSignal(read,traceboundary,fmercurrent):
 
     try:
-        ret = _normalizeSignal(read,traceboundary,fmercurrent)
-        #print("success")
-        return ret
-
+        return _normalizeSignal(read,traceboundary,fmercurrent)
     except:
-        print("error in normalization, use old method to normalize")
+
+        print("normalize by window failed with " + read.read_id +" privious method was used")
+
     return  normalizeSignal_old(read,traceboundary,fmercurrent)
 
 from scipy.interpolate import interp1d
@@ -176,7 +184,7 @@ def _normalizeSignal(read,traceboundary,fmercurrent):
     signalmeans = getMeans(signal,traceboundary)
     theorymean = theoryMean(fmercurrent, lgenome ,strand)
     shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
-    window = 30
+    window = 40
     step = 5
     start = 0
     end = window
@@ -188,7 +196,7 @@ def _normalizeSignal(read,traceboundary,fmercurrent):
         scaleshift = calcNormalizeScaleLMS(signalmeans[start:end], theorymean[start:end])
         if scaleshift is None:
             scaleshifts.append(None)
-        # by each 25 base 50 nt interval calculate a,b
+        # by each 5 base 40 nt interval calculate a,b
         start = start + step
         end = end + step
         a = scaleshift[0][0]
@@ -196,7 +204,10 @@ def _normalizeSignal(read,traceboundary,fmercurrent):
         scaleshifts.append((a,b))
         a_for_max_min.append(a)
         b_for_max_min.append(b)
+    #
 
+    downsamplesize = len(signal) // 2 #half the size
+    signal = downsample(signal, downsamplesize)
 
     functionA,functionB = getFunction(scaleshifts,traceboundary,window,step)
     num = np.arange(len(signal))
@@ -213,8 +224,6 @@ def _normalizeSignal(read,traceboundary,fmercurrent):
     signal = ((signal-low_limit) / (high_limit-low_limit)) * 255
     signal = np.around(signal.astype(np.float), 0)
 
-    downsamplesize = len(signal) // 2 #half the size
-    signal = downsample(signal, downsamplesize)
 
     signal = np.clip(signal, 0, 255)
     signal = signal.astype(np.uint8)

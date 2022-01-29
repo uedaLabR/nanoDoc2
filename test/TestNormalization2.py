@@ -6,6 +6,7 @@ from scipy import interpolate
 import pyarrow as pa
 import pyarrow.parquet
 import pandas as pd
+from numba import jit
 
 from signalalign import ViterbiSegmantation
 
@@ -422,6 +423,7 @@ def predictShift(a,b):
 
     return maxn,ar,br
 
+
 def calcNormalizeScaleLMS(signalmeans,theorymean):
 
     y1 = 0
@@ -441,10 +443,11 @@ def calcNormalizeScaleLMS(signalmeans,theorymean):
     b = np.array([[y1y2], [y1]])
     return np.dot(ainv, b)
 
+
 def getFunction(scaleshifts,traceboundary,window,step):
 
     cnt = 0
-    unit = 10
+    unit = 5 # applyfter down sampled
 
     x = []
     y1 = []
@@ -462,8 +465,8 @@ def getFunction(scaleshifts,traceboundary,window,step):
         y1.append(a)
         y2.append(b)
 
-    f1 = interpolate.interp1d(x, y1, kind="cubic",fill_value="extrapolate")
-    f2 = interpolate.interp1d(x, y2, kind="cubic",fill_value="extrapolate")
+    f1 = interpolate.interp1d(x, y1, kind="linear",fill_value="extrapolate")
+    f2 = interpolate.interp1d(x, y2, kind="linear",fill_value="extrapolate")
     return f1,f2
 
 from scipy.interpolate import interp1d
@@ -472,6 +475,23 @@ def downsample(array, npts):
     downsampled = interpolated(np.linspace(0, len(array), npts))
     return downsampled
 
+import warnings
+warnings.filterwarnings('ignore')
+@jit
+def getArys(functionA,functionB,signal_len):
+
+    a_a = []
+    b_a = []
+    for n in range(signal_len):
+        a = functionA(n)
+        b = functionB(n)
+        a_a.append(a)
+        b_a.append(b)
+        n+=1
+
+    return np.array(a_a),np.array(b_a)
+
+import time
 if __name__ == "__main__":
 
    #path = '/data/nanopore/rRNA/1623_ivt-multi/singleFast5/137/462bc3b0-c01e-4404-b289-aa22066df3c9.fast5'
@@ -528,8 +548,11 @@ if __name__ == "__main__":
    signal_t = signal_t[::-1]  # reverse for rna
    signal_v = signal_v[::-1]  # reverse for rna
    print(len(signal_t),len(signal_v))
+   start_time = time.process_time()
    signalmeans = getMeans(signal_v,traceboundary)
    #signalmeans = getMeans(signal_v, frombasecaller_idx)
+
+
 
    tombosignalmean = getMeansT(signal_t,sgst)
    theorymean = theoryMean(fmercurrent,lgenome)
@@ -540,11 +563,18 @@ if __name__ == "__main__":
    print("sgst",len(sgst),sgst)
    print("traceboundary", len(traceboundary),traceboundary)
    print("frombasecaller_idx",len(frombasecaller_idx),frombasecaller_idx)
-
+   end_time = time.process_time()
+   elapsed_time = end_time - start_time
+   print("1",elapsed_time)
 
    shift,signalmeans,theorymean = predictShift(signalmeans,theorymean)
+
+   end_time = time.process_time()
+   elapsed_time = end_time - start_time
+   print("predice shift",elapsed_time)
+
    window = 40
-   step = 10
+   step = 5
    start = 0
    end = window
    scaleshifts = []
@@ -565,18 +595,58 @@ if __name__ == "__main__":
        a_a.append(a)
        b_a.append(b)
 
+   end_time = time.process_time()
+   elapsed_time = end_time - start_time
+   print("b4 function",elapsed_time)
 
    functionA, functionB = getFunction(scaleshifts, traceboundary, window, step)
+
+   end_time = time.process_time()
+   elapsed_time = end_time - start_time
+   print("after function",elapsed_time)
+
+   downsamplesize = len(signal_t) // 2  # half the size
+   signal_t = downsample(signal_t, downsamplesize)
+
    num = np.arange(len(signal_t))
-   a_ary = np.frompyfunc(functionA, 1, 1)(num)  # mean
+   end_time = time.process_time()
+   elapsed_time = end_time - start_time
+   print("after function a",elapsed_time)
+   #consume too much time
+   # a_ary = np.frompyfunc(functionA, 1, 1)(num)  # mean
+   # b_ary = np.frompyfunc(functionB, 1, 1)(num)  # sd
+   # va = np.vectorize(functionA)
+   # vb = np.vectorize(functionB)
+   # end_time = time.process_time()
+   # elapsed_time = end_time - start_time
+   # print("after function b",elapsed_time)
+   # a_ary = va(num)
+   # end_time = time.process_time()
+   # elapsed_time = end_time - start_time
+   # print("after function c",elapsed_time)
+   # b_ary = vb(num)
+   end_time = time.process_time()
+   elapsed_time = end_time - start_time
+   print("after function d",elapsed_time)
    b_ary = np.frompyfunc(functionB, 1, 1)(num)  # sd
+   end_time = time.process_time()
+   elapsed_time = end_time - start_time
+   print("after function e",elapsed_time)
+   a_ary = np.frompyfunc(functionA, 1, 1)(num)  # mean
+   #a_ary,b_ary = getArys(functionA,functionA,len(signal_t))
    a_ary = np.clip(a_ary,max(a_a),min(a_a))
-   b_ary = np.clip(a_ary, max(b_a), min(b_a))
+   b_ary = np.clip(b_ary, max(b_a), min(b_a))
+
+   end_time = time.process_time()
+   elapsed_time = end_time - start_time
+   print("apply function f", elapsed_time)
 
    signal_t  = signal_t * a_ary + b_ary
    print(len(signal_t))
    print(len(signal_v))
-
+   end_time = time.process_time()
+   elapsed_time = end_time - start_time
+   print("apply function3",elapsed_time)
 
    signal_t = np.clip(signal_t, 40, 160)
    signal_v = np.clip(signal_v, 40, 160)
@@ -584,14 +654,20 @@ if __name__ == "__main__":
    signal_t = ((signal_t - 40) / (160 - 40)) * 255
    print(signal_t)
    signal_t = np.around(signal_t.astype(np.double), 0)
+   end_time = time.process_time()
+   elapsed_time = end_time - start_time
+   print(elapsed_time)
 
-   downsamplesize = len(signal_t) // 2  # half the size
-   signal_t = downsample(signal_t, downsamplesize)
+
+
+
    signal_t = signal_t.astype(np.uint8)
    signal_t = np.clip(signal_t, 0, 255)
    signal_t = signal_t.astype(np.uint8)
    print(len(signal_t))
    print(len(signal_v))
-
+   end_time2 = time.process_time()
+   elapsed_time = end_time2 - start_time
+   print(elapsed_time)
    fig = plotboth(signal_t, signal_v, tombosignalmean, signalmeans, theorymean)
    fig.savefig("/data/nanopore/testnormalize7.png")
