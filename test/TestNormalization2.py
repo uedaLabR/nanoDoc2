@@ -184,30 +184,34 @@ from matplotlib import gridspec
 import itertools
 base_corresponding_table = {0:'A',2:'G',1:'C',3:'U',4:'A-',6:'G-',5:'C-',7:'U-'}
 base_color = {'A':'#228b22','U':'#db7093','G':'#ff8c00','C':'#4169e1','A-':'#228b22','U-':'#db7093','G-':'#ff8c00','C-':'#4169e1'}
-def plotboth(signal_t,signal_v,tombosignalmean,signalmeans,theorymean):
+def plotboth(a_ary,b_ary,signal_t,signal_v,tombosignalmean,signalmeans,theorymean):
 
     limit = 25000
 
     fig = plt.figure(figsize=(180, 45))
 
-    gs = gridspec.GridSpec(6, 1, height_ratios=[0.15, 0.15,0.15,0.15,0.15,0.15])
+    gs = gridspec.GridSpec(8, 1, height_ratios=[0.1, 0.1,0.1,0.1,0.1,0.1,0.1,0.1])
     ax1 = fig.add_subplot(gs[0])
     ax2 = fig.add_subplot(gs[1])
     ax3 = fig.add_subplot(gs[2])
     ax4 = fig.add_subplot(gs[3])
     ax5 = fig.add_subplot(gs[4])
     ax6 = fig.add_subplot(gs[5])
+    ax7 = fig.add_subplot(gs[6])
+    ax8 = fig.add_subplot(gs[7])
 
     #
     # plot signal
     ax1.plot(signal_t, linewidth=2)
     ax2.plot(signal_v, linewidth=2)
+    ax7.plot(a_ary, linewidth=2)
+    ax8.plot(b_ary, linewidth=2)
 
     ax4.plot(tombosignalmean, linewidth=2)
     ax3.plot(signalmeans, linewidth=2)
     ax5.plot(theorymean, linewidth=2)
     ax6.plot(signalmeans, linewidth=2)
-    ax6.plot(theorymean, linewidth=2)
+
 
     return fig
 
@@ -573,7 +577,7 @@ if __name__ == "__main__":
    elapsed_time = end_time - start_time
    print("predice shift",elapsed_time)
 
-   window = 40
+   window = 30
    step = 5
    start = 0
    end = window
@@ -629,11 +633,13 @@ if __name__ == "__main__":
    elapsed_time = end_time - start_time
    print("after function d",elapsed_time)
    b_ary = functionB(num)  # sd
+   print("b_ary",b_ary)
    end_time = time.process_time()
    elapsed_time = end_time - start_time
    print("after function e",elapsed_time)
    a_ary = functionA(num)  # mean
    end_time = time.process_time()
+   print("a_ary",a_ary)
    elapsed_time = end_time - start_time
    print("after function f",elapsed_time)
    #a_ary,b_ary = getArys(functionA,functionA,len(signal_t))
@@ -675,5 +681,5 @@ if __name__ == "__main__":
    end_time2 = time.process_time()
    elapsed_time = end_time2 - start_time
    print(elapsed_time)
-   fig = plotboth(signal_t, signal_v, tombosignalmean, signalmeans, theorymean)
+   fig = plotboth(a_ary,b_ary,signal_t, signal_v, tombosignalmean, signalmeans, theorymean)
    fig.savefig("/data/nanopore/testnormalize7.png")
