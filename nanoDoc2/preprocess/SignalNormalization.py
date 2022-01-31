@@ -167,7 +167,7 @@ def normalizeSignal(read,traceboundary,fmercurrent):
         return _normalizeSignal(read,traceboundary,fmercurrent)
     except:
 
-        print("normalize by window failed with " + read.read_id +" privious method was used")
+        print("normalize by window failed with " + read.read_id +" len="+str(len(read.sequence))+" , probably too short,sequence is normized as a whole")
 
     return  normalizeSignal_old(read,traceboundary,fmercurrent)
 
@@ -184,7 +184,7 @@ def _normalizeSignal(read,traceboundary,fmercurrent):
     signalmeans = getMeans(signal,traceboundary)
     theorymean = theoryMean(fmercurrent, lgenome ,strand)
     shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
-    window = 80
+    window = 60
     step = 5
     start = 0
     end = window
@@ -217,13 +217,11 @@ def _normalizeSignal(read,traceboundary,fmercurrent):
     # in order to avoid at adjustment with overfitting on both end
     a_ary = np.clip(a_ary, min(a_for_max_min), max(a_for_max_min))
     b_ary = np.clip(b_ary, min(b_for_max_min), max(b_for_max_min))
-
     signal = signal * a_ary + b_ary
 
     signal = np.clip(signal, low_limit, high_limit)
     signal = ((signal-low_limit) / (high_limit-low_limit)) * 255
     signal = np.around(signal.astype(np.float), 0)
-
 
     signal = np.clip(signal, 0, 255)
     signal = signal.astype(np.uint8)
@@ -252,5 +250,7 @@ def normalizeSignal_old(read,traceboundary,fmercurrent):
     signal = (signal / (high_limit-low_limit)) * 255
     downsamplesize = len(signal) // 2 #half the size
     signal = downsample(signal, downsamplesize)
+    signal = np.around(signal.astype(np.float), 0)
+    signal = np.clip(signal, 0, 255)
     signal = signal.astype(np.uint8)
     return signal

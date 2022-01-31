@@ -109,15 +109,40 @@ class PqReader:
             # ('trace', list_(uint16())),
             # ('signal', list_(uint8()))
             parquet_file = pq.ParquetFile(file)
-            chrInfo = parquet_file.metadata.row_group(0).column(1).statistics.min
-            strandInfo = parquet_file.metadata.row_group(0).column(2).statistics.min
-            startInfo = parquet_file.metadata.row_group(0).column(3).statistics.min
-            endInfo = parquet_file.metadata.row_group(0).column(4).statistics.max
+            chrInfo = parquet_file.metadata.row_group(0).column(2).statistics.min
+            strandInfo = parquet_file.metadata.row_group(0).column(3).statistics.min
+            startInfo = parquet_file.metadata.row_group(0).column(4).statistics.min
+            endInfo = parquet_file.metadata.row_group(0).column(5).statistics.max
             indexlist.append((fileidx,chrInfo,strandInfo,startInfo,endInfo))
             fileidx +=1
 
         self.indexdf = pd.DataFrame(indexlist,
                           columns=['fileidx','chr','strand','start','end'])
+
+    def getDepth(self,chr, pos, strand):
+
+        #extract parquet file contain reads in this region
+        query = 'start <= ' + str(pos) + ' & end >= ' + str(pos) + ' & chr == "' + chr + '" & strand == ' + str(
+            strand) + ''
+        pqfiles = self.indexdf.query(query)
+        sortedfile = sorted(glob.glob(self.path + "/*.pq"))
+        indexdata = None
+        for index, row in pqfiles.iterrows():
+
+            fileidx = row['fileidx']
+            filepath = sortedfile[fileidx]
+
+            if indexdata is None:
+                indexdata = pq.read_table(filepath, columns=['start', 'end']).to_pandas()
+
+
+            else:
+                dataadd = pq.read_table(filepath, columns=['start', 'end']).to_pandas()
+                indexdata = pd.concat([indexdata, dataadd])
+
+        depth = indexdata.query('start <=' + str(pos-10) + ' & end >=' + str(pos+10))['start'].count()
+        return depth
+
 
 
     def randomsample(self, pos, data, ntake, indexes):
