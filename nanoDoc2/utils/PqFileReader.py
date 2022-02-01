@@ -151,6 +151,7 @@ class PqReader:
 
             #print('init read')
             datainpos = data.query('start <=' + str(pos-takemargin) + ' & end >=' + str(pos+takemargin))
+            print(pos,ntake,len(datainpos),len(data))
             datainpos = datainpos.sample(n=ntake)
             return datainpos.loc[:, ['fileidx', 'read_id']]
 
@@ -183,6 +184,7 @@ class PqReader:
     # ('signal', list_(uint8()))
     def load(self,chr, pos, strand):
 
+        self.loadchr = chr
         #extract parquet file contain reads in this region
         query = 'start <= ' + str(pos) + ' & end >= ' + str(pos) + ' & chr == "' + chr + '" & strand == ' + str(
             strand) + ''
@@ -247,12 +249,12 @@ class PqReader:
 
 
 
-    def getRowData(self, chr, strand, pos):
+    def getRowData(self, chr, strand, pos,takecnt=-1):
 
-        if self.bufferData is None or (pos // binsize) == 0:
+        if self.bufferData is None or chr != self.loadchr or (pos // binsize) == 0:
             self.load(chr, pos, strand)
 
-        sampled, sampledlen = self.getFormattedData(strand, pos)
+        sampled, sampledlen = self.getFormattedData(strand, pos,takecnt)
         if sampledlen > self.maxreads_org:
             sampled = sampled[0:self.maxreads_org]
         return sampled , len(sampled)
@@ -291,7 +293,7 @@ class PqReader:
             # do not use lower end
             return None
 
-        end = rel + 6
+        end = rel + 5
         if end >= traceintervalLen:
             end = traceintervalLen-1
         if start == end:
@@ -315,10 +317,7 @@ class PqReader:
             return None
         sig_start = offset + traceintervals[relativeStart] * TraceToSignalRatio
         sig_end = offset + traceintervals[relativeEnd] * TraceToSignalRatio
-
         return sig_start,sig_end
-
-
 
 
     def getOneRow(self,row,strand, pos):
@@ -342,17 +341,19 @@ class PqReader:
         binnedSignal = binned(signal, DATA_LENGTH)
         return binnedSignal
 
-    def getFormattedData(self, strand, pos):
+    def getFormattedData(self, strand, pos,_takecnt):
 
         data = []
-        takecnt = 1
+        takecnt = 0
         for index, row in self.bufferData.iterrows():
 
             rowdata = self.getOneRow(row, strand, pos)
             if rowdata  is not None:
-                data.append((takecnt, rowdata))
+                data.append(rowdata)
                 takecnt = takecnt + 1
 
-        return  data,len(data)
+                if _takecnt > 0 and takecnt == _takecnt:
+                    break
 
 
+        return  data
