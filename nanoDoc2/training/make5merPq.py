@@ -94,13 +94,15 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
             #
             if pfidx != fileidx:
                 path = pqs[fileidx]
+                print("init reader")
                 fr = PqReader(path, 4000)
 
-            data = fr.getRowData(chr, True, pos,takecnt)
+            data, cnt = fr.getRowData(chr, True, pos,takecnt)
+            print(p,cnt)
             pfidx = fileidx
 
             if fmer in datadict:
-                datadict[fmer].extends(data)
+                datadict[fmer].extend(data)
             else:
                 d = []
                 d.append(data)
@@ -151,8 +153,13 @@ if __name__ == "__main__":
     #pq2 = "/data/nanopore/nanoDoc2/testCurlcakeIVT"
     pqs = [pq1]
     #
+
+    # fr = PqReader(pq1, 4000)
+    # chr = "cc6m_2244_t7_ecorv"
+    # data = fr.getRowData(chr, True, 30, 50)
+
     takeCnt = 3600
-    posList = makeSamplePlan(refs,pqs, path_w,takeCnt)
+    makeSamplePlan(refs,pqs, path_w,takeCnt)
 
 
 

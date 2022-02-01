@@ -23,7 +23,7 @@ DATA_LENGTH_UNIT = 30
 DATA_LENGTH = DATA_LENGTH_UNIT * 5 + 10
 TraceToSignalRatio = 5
 binsize = 1000
-takemargin = 50
+takemargin = 10
 
 from scipy import ndimage as ndi
 import statistics
@@ -91,6 +91,7 @@ class PqReader:
         self.maxreads = int(maxreads * 1.2)# take little more sample since some reads disqualify
         self.maxreads_org = maxreads
         self.bufferData = None
+        self.loadchr = None
         sortedfile = sorted(glob.glob(path+"/*.pq"))
         #make index from parquet meta data
         indexlist = []
@@ -151,20 +152,21 @@ class PqReader:
 
             #print('init read')
             datainpos = data.query('start <=' + str(pos-takemargin) + ' & end >=' + str(pos+takemargin))
-            print(pos,ntake,len(datainpos),len(data))
+            if datainpos is None or len(datainpos) ==0:
+                return None
             datainpos = datainpos.sample(n=ntake)
-            return datainpos.loc[:, ['fileidx', 'read_id']]
+            return datainpos.loc[:, ['fileidx', 'read_no']]
 
         else:
 
             datainpos = data.query('start <=' + str(pos-takemargin) + ' & end >=' + str(pos+takemargin))
-            df_alreadyhave = indexes['read_id']
-            datainpos = datainpos[~datainpos.read_id.isin(df_alreadyhave)]
+            df_alreadyhave = indexes['read_no']
+            datainpos = datainpos[~datainpos.read_no.isin(df_alreadyhave)]
             cnt = ntake - len(datainpos)
             if cnt > 0:
                 datainpos = datainpos.sample(n=cnt)
                 #print(cnt,len(datainpos))
-                return datainpos.loc[:, ['fileidx', 'read_id']]
+                return datainpos.loc[:, ['fileidx', 'read_no']]
             else:
                 #print('return none')
                 return None
@@ -199,11 +201,11 @@ class PqReader:
             filepath = sortedfile[fileidx]
 
             if indexdata is None:
-                indexdata = pq.read_table(filepath, columns=['read_id', 'chr', 'strand', 'start', 'end']).to_pandas()
+                indexdata = pq.read_table(filepath, columns=['read_no', 'chr', 'strand', 'start', 'end']).to_pandas()
                 indexdata['fileidx'] = fileidx
 
             else:
-                dataadd = pq.read_table(filepath, columns=['read_id', 'chr', 'strand', 'start', 'end']).to_pandas()
+                dataadd = pq.read_table(filepath, columns=['read_no', 'chr', 'strand', 'start', 'end']).to_pandas()
                 dataadd['fileidx'] = fileidx
                 indexdata = pd.concat([indexdata, dataadd])
 
@@ -232,11 +234,11 @@ class PqReader:
         for findex in fileindexes:
 
             filepath = sortedfile[findex]
-            readids = readsIndex['read_id']
+            readids = readsIndex['read_no']
             filterlist = []
-            filterTp = ('read_id', 'in', readids)
+            filterTp = ('read_no', 'in', readids)
             filterlist.append(filterTp)
-            columns = ['read_id', 'chr', 'strand', 'start', 'end', 'cigar', 'offset', 'traceintervals', 'signal']
+            columns = ['read_no', 'chr', 'strand', 'start', 'end', 'cigar', 'offset', 'traceintervals', 'signal']
             if dataWithRow is None:
                 dataWithRow = pq.read_table(filepath, filters=filterlist, columns=columns).to_pandas()
 
@@ -251,10 +253,12 @@ class PqReader:
 
     def getRowData(self, chr, strand, pos,takecnt=-1):
 
-        if self.bufferData is None or chr != self.loadchr or (pos // binsize) == 0:
+        if ((self.bufferData is None) or (chr != self.loadchr) or ((pos % binsize) == 0)):
+            #print("loading row files",self.bufferData is None, chr != self.loadchr , (pos % binsize) == 0)
             self.load(chr, pos, strand)
 
-        sampled, sampledlen = self.getFormattedData(strand, pos,takecnt)
+        sampled = self.getFormattedData(strand, pos,takecnt)
+        sampledlen = len(sampled)
         if sampledlen > self.maxreads_org:
             sampled = sampled[0:self.maxreads_org]
         return sampled , len(sampled)
@@ -349,11 +353,12 @@ class PqReader:
 
             rowdata = self.getOneRow(row, strand, pos)
             if rowdata  is not None:
-                data.append(rowdata)
+                data.extend(rowdata)
                 takecnt = takecnt + 1
 
                 if _takecnt > 0 and takecnt == _takecnt:
                     break
 
-
+        data = np.array(data)
+        data = data / 256
         return  data
