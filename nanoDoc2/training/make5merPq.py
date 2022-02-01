@@ -97,8 +97,9 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
                 print("init reader")
                 fr = PqReader(path, 4000)
 
-            data, cnt = fr.getRowData(chr, True, pos,takecnt)
+            data, cnt = fr.getRowData(chr, True, pos,takecnt=takecnt)
             print(p,cnt)
+
             pfidx = fileidx
 
             if fmer in datadict:

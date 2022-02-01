@@ -355,7 +355,6 @@ class PqReader:
             if rowdata  is not None:
                 data.extend(rowdata)
                 takecnt = takecnt + 1
-
                 if _takecnt > 0 and takecnt == _takecnt:
                     break
 
