@@ -162,8 +162,8 @@ class PqReader:
             datainpos = data.query('start <=' + str(pos-takemargin) + ' & end >=' + str(pos+takemargin))
             df_alreadyhave = indexes['read_no']
             datainpos = datainpos[~datainpos.read_no.isin(df_alreadyhave)]
-            cnt = ntake - len(datainpos)
-            if cnt > 0:
+            cnt = ntake - len(df_alreadyhave)
+            if (cnt > 0) and (cnt <= len(datainpos)):
                 datainpos = datainpos.sample(n=cnt)
                 #print(cnt,len(datainpos))
                 return datainpos.loc[:, ['fileidx', 'read_no']]
@@ -257,11 +257,11 @@ class PqReader:
             #print("loading row files",self.bufferData is None, chr != self.loadchr , (pos % binsize) == 0)
             self.load(chr, pos, strand)
 
-        sampled = self.getFormattedData(strand, pos,takecnt)
-        sampledlen = len(sampled)
+        sampled,sampledlen = self.getFormattedData(strand, pos,takecnt)
         if sampledlen > self.maxreads_org:
-            sampled = sampled[0:self.maxreads_org]
-        return sampled , len(sampled)
+            sampled = sampled[0:self.maxreads_org*DATA_LENGTH]
+            sampledlen = self.maxreads_org
+        return sampled,sampledlen
 
     import pysam
     def correctCigar(self,targetPos,cigar):
@@ -355,9 +355,10 @@ class PqReader:
             if rowdata  is not None:
                 data.extend(rowdata)
                 takecnt = takecnt + 1
+                #print("takecnt",takecnt,_takecnt)
                 if _takecnt > 0 and takecnt == _takecnt:
                     break
 
         data = np.array(data)
         data = data / 256
-        return  data
+        return  data,takecnt
