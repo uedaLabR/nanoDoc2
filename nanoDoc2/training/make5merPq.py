@@ -46,6 +46,7 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
            seq = record.seq
 
            for n in range(30, len(seq)-30):
+           #for n in range(30, 100):
 
               smer = seq[n:n+5]
               b4 = seq[n-1]
@@ -90,7 +91,7 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
     for p in posList:
 
         fileidx,chr,pos,depth,takecnt,fmer = p
-        print(p)
+
         #
         if pfidx != fileidx:
             path = pqs[fileidx]
@@ -98,13 +99,15 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
             fr = PqReader(path, 4000)
 
         data, cnt = fr.getRowData(chr, True, pos,takecnt=takecnt)
+        print(p,len(data),cnt)
         pfidx = fileidx
-        if fmer in datadict:
-            datadict[fmer].append(data)
-        else:
-            d = []
-            d.append(data)
-            datadict[fmer] = d
+        if len(data) > 0:
+            if fmer in datadict:
+                datadict[fmer].extend(data)
+            else:
+                d = []
+                d.extend(data)
+                datadict[fmer] = d
 
     #write to parquet
     keys = datadict.keys()
@@ -114,7 +117,6 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
     for key in keys:
 
         d = datadict[key]
-        d = np.array(d)
         d = np.ravel(d)
         tp = (keyidx,key,d)
         dataf.append(tp)
@@ -131,6 +133,9 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
                       columns=['flg','fmer', 'signal'])
     pd.set_option('display.max_rows', None)
     print(df)
+    print(df['signal'])
+    print(df['signal'].dtypes)
+
     pyarrow_table = Table.from_pandas(df, pschema)
     pq.write_table(
         pyarrow_table,

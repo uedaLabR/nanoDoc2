@@ -36,8 +36,10 @@ def binned(trimsignal, trimlength, mode=1):
 
     if len(trimsignal) > trimlength:
         # trim from first
-        lefthalf = (len(trimsignal) - trimlength) // 2 - 1
-        return trimsignal[lefthalf:trimlength]
+        lefthalf = ((len(trimsignal) - trimlength)) // 2 - 1
+        #print("trim",len(trimsignal),trimlength,lefthalf,len(trimsignal[lefthalf:lefthalf+trimlength]))
+        return trimsignal[lefthalf:lefthalf+trimlength]
+
     else:
         #
         ret = np.zeros(trimlength)
@@ -343,6 +345,7 @@ class PqReader:
         #print(signal)
         #
         binnedSignal = binned(signal, DATA_LENGTH)
+        #print('bin signal len',len(binnedSignal))
         return binnedSignal
 
     def getFormattedData(self, strand, pos,_takecnt):
