@@ -14,42 +14,46 @@ def getPlot(data,pos):
 
 if __name__ == "__main__":
 
-    path = '/data/nanopore/nanoDoc2/testCurlcakeIVT'
-    fr = PqReader(path,100)
+    #path = '/data/nanopore/nanoDoc2/testCurlcakeIVT'
+    path = '/data/nanopore/nanoDoc2/testSARSCOV2'
+    fr = PqReader(path,4000)
 
-    pathout = '/data/nanopore/nanoDoc2/testfig/test.pdf'
-    output_file = '/data/nanopore/nanoDoc2/nanodoctest.pq'
+    # pathout = '/data/nanopore/nanoDoc2/testfig/test.pdf'
+    # output_file = '/data/nanopore/nanoDoc2/nanodoctest.pq'
 
-    gm = GraphManager(pathout)
+    #gm = GraphManager(pathout)
     datab =[]
+    depth = fr.getRowData("hCoV-19_South_Korea", True, 10001)
     for n in range(2):
 
-        pos = 1500+n
-        data,cnt = fr.getRowData("cc6m_2459_t7_ecorv",True,pos)
-        datab.extend(data)
+        pos = 10713+n
+        depth = fr.getRowData("hCoV-19_South_Korea",True,pos)
+        print(depth)
+        data,cnt = fr.getRowData("hCoV-19_South_Korea",True,pos,takecnt=100)
+        print(cnt)
 
-    print(datab)
-    pschema = schema(
-            [
-                ('key', string()),
-                ('signal', list_(float32()))
-            ]
-    )
-    r = []
-    tp = ("ATGCA", datab)
-    r.append(tp)
-    print(r)
-    df = pd.DataFrame(r,
-                      columns=['key', 'signal'])
-    pyarrow_table = Table.from_pandas(df, pschema)
-    pq.write_table(
-        pyarrow_table,
-        output_file,
-        row_group_size=4000,
-        compression='snappy',
-        flavor=['spark'],
-    )
+    # print(datab)
+    # pschema = schema(
+    #         [
+    #             ('key', string()),
+    #             ('signal', list_(float32()))
+    #         ]
+    # )
+    # r = []
+    # tp = ("ATGCA", datab)
+    # r.append(tp)
+    # print(r)
+    # df = pd.DataFrame(r,
+    #                   columns=['key', 'signal'])
+    # pyarrow_table = Table.from_pandas(df, pschema)
+    # pq.write_table(
+    #     pyarrow_table,
+    #     output_file,
+    #     row_group_size=4000,
+    #     compression='snappy',
+    #     flavor=['spark'],
+    # )
 
 
 
-    gm.save()
+    #gm.save()

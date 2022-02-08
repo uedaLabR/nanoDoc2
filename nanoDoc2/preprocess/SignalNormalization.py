@@ -163,11 +163,11 @@ def getFunction(scaleshifts,traceboundary,window,step):
 
 def normalizeSignal(read,traceboundary,fmercurrent):
 
-    try:
-        return _normalizeSignal(read,traceboundary,fmercurrent)
-    except:
-
-        print("normalize by window failed with " + read.read_id +" len="+str(len(read.sequence))+" , probably too short,sequence is normized as a whole")
+    # try:
+    #     return _normalizeSignal(read,traceboundary,fmercurrent)
+    # except:
+    #
+    #     print("normalize by window failed with " + read.read_id +" len="+str(len(read.sequence))+" , probably too short,sequence is normized as a whole")
 
     return  normalizeSignal_old(read,traceboundary,fmercurrent)
 
@@ -249,7 +249,7 @@ def normalizeSignal_old(read,traceboundary,fmercurrent):
     signal = signal - low_limit
     signal = (signal / (high_limit-low_limit)) * 255
     downsamplesize = len(signal) // 2 #half the size
-    signal = downsample(signal, downsamplesize)
+    #signal = downsample(signal, downsamplesize)
     signal = np.around(signal.astype(np.float), 0)
     signal = np.clip(signal, 0, 255)
     signal = signal.astype(np.uint8)

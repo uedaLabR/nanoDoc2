@@ -125,7 +125,7 @@ class PqReader:
     def getDepth(self,chr, pos, strand):
 
         #extract parquet file contain reads in this region
-        query = 'start <= ' + str(pos) + ' & end >= ' + str(pos) + ' & chr == "' + chr + '" & strand == ' + str(
+        query = 'start <= ' + str(pos-takemargin) + ' & end >= ' + str(pos+takemargin) + ' & chr == "' + chr + '" & strand == ' + str(
             strand) + ''
         pqfiles = self.indexdf.query(query)
         sortedfile = sorted(glob.glob(self.path + "/*.pq"))
@@ -157,20 +157,23 @@ class PqReader:
             if datainpos is None or len(datainpos) ==0:
                 return None
             datainpos = datainpos.sample(n=ntake)
-            return datainpos.loc[:, ['fileidx', 'read_no']]
+            return datainpos
 
         else:
 
-            datainpos = data.query('start <=' + str(pos-takemargin) + ' & end >=' + str(pos+takemargin))
-            df_alreadyhave = indexes['read_no']
-            datainpos = datainpos[~datainpos.read_no.isin(df_alreadyhave)]
-            cnt = ntake - len(df_alreadyhave)
-            if (cnt > 0) and (cnt <= len(datainpos)):
-                datainpos = datainpos.sample(n=cnt)
-                #print(cnt,len(datainpos))
-                return datainpos.loc[:, ['fileidx', 'read_no']]
+            dataposprev = indexes.query('start <=' + str(pos-takemargin) + ' & end >=' + str(pos+takemargin))
+            if len(dataposprev) == ntake:
+                return None
+
             else:
-                #print('return none')
+                datainpos = data.query('start <=' + str(pos-takemargin) + ' & end >=' + str(pos+takemargin))
+                df_alreadyhave = dataposprev['read_no']
+                datainpos = datainpos[~datainpos.read_no.isin(df_alreadyhave)]
+                cnt = ntake - len(df_alreadyhave)
+                if (cnt > 0) and (cnt <= len(datainpos)):
+                    datainpos = datainpos.sample(n=cnt)
+                    return datainpos
+
                 return None
 
 
@@ -220,10 +223,11 @@ class PqReader:
 
         readsIndex = None
         ntake = self.maxreads
-        # get readid to reads for bin interval batch
-        for n in range(start,end):
 
-            addIndex = self.randomsample(pos, indexdata, ntake, readsIndex)
+        # get readid to reads for bin interval batch
+        for pos2 in range(start,end):
+
+            addIndex = self.randomsample(pos2, indexdata, ntake, readsIndex)
             if readsIndex is None:
                 readsIndex = addIndex
             elif addIndex is not None:
@@ -263,6 +267,21 @@ class PqReader:
         if sampledlen > self.maxreads_org:
             sampled = sampled[0:self.maxreads_org*DATA_LENGTH]
             sampledlen = self.maxreads_org
+
+        if sampledlen < takecnt and takecnt > 0:
+            depth = self.getDepth(chr, pos, strand)
+            if depth > takecnt:
+                #load and sample again since not enough sampling for this region
+                self.load(chr, pos, strand)
+                sampled, sampledlen = self.getFormattedData(strand, pos, takecnt)
+
+        if takecnt == -1:
+            depth = self.getDepth(chr, pos, strand)
+            if sampledlen < depth:
+                self.load(chr, pos, strand)
+                sampled, sampledlen = self.getFormattedData(strand, pos, takecnt)
+
+
         return sampled,sampledlen
 
     import pysam

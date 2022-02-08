@@ -3,12 +3,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 # from tensorflow.keras.utils.training_utils import multi_gpu_model
 import tensorflow
-import src.nanoDoc2.cnnnetwork
-import os
 import pandas as pd
 from tensorflow.keras.callbacks import ModelCheckpoint
-import src.nanoDoc2.cnnnetwork as cnn_network
-from src.nanoDoc2 import cnnwavenet, cnnwavenet_keras
+
 
 DATA_LENGTH =  160
 
@@ -25,7 +22,7 @@ def prepData(df1):
     train_y = []
     test_y = []
     totalcnt = 0
-    labelidx = df1["key"].unique().tolist()
+    labelidx = df1["fmer"].unique().tolist()
 
     cnt = 0
     for idx, row in df1.iterrows():
@@ -35,19 +32,11 @@ def prepData(df1):
         flg = row[0]
         signal = np.array(row[2])
 
-        testidx = (cnt % 5 == 0)
-        if testidx:
-            test_x.extend(signal)
-            test_y.append(flg)
-        else:
-            train_x.extend(signal)
-            train_y.append(flg)
+        test_x.extend(signal[0:DATA_LENGTH*1000])
+        test_y.extend([flg]*1000)
+        train_x.extend(signal[DATA_LENGTH*1000:DATA_LENGTH*4000])
+        train_y.extend([flg]*3000)
 
-        totalcnt = totalcnt + 1
-        if totalcnt % 1000 == 0:
-            print(totalcnt, idx,row[0],row[1],len(row[2]))
-            #print(totalcnt, idx, row[0], len(row[1]))
-        cnt = cnt+1
         # if cnt == 30000:
         #     break
 
@@ -95,6 +84,7 @@ def main(s_data, s_out):
         #tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
         _main(s_data, s_out)
 
+import nanoDoc2.network.cnnwavenet as cnnwavenet
 def _main(s_data, s_out):
 
     batch_size = 512
@@ -109,7 +99,7 @@ def _main(s_data, s_out):
 
     # with tf.device("/cpu:0"):
 
-    model = cnn_network.build_network(shape=shape1, num_classes=num_classes)
+    model = cnnwavenet.build_network(shape=shape1, num_classes=num_classes)
     model.summary()
 
     # model = multi_gpu_model(model, gpus=gpu_count)  # add

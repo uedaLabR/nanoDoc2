@@ -261,9 +261,7 @@ def toCompact(trace,possiblemove_idx,frombasecaller_idx):
 @numba.jit(nopython=True)
 def getStateProb(statesArray, compactTrace, n, m):
 
-    modscore_min = 0.2
-    modhitthres = 0.7
-    scA, scC, scG, scU = 0, 0, 0, 0
+
     aref = statesArray[n]
     refbase = aref
 
@@ -281,13 +279,13 @@ def getStateProb(statesArray, compactTrace, n, m):
     if refbase == 'A': score = scA
     if refbase == 'C': score = scC
     if refbase == 'G': score = scG
-    if refbase == 'U': score = scU
+    if refbase == 'T' or refbase == 'U': score = scU
+    minusscore = 0
     if total > 0:
         plusscore = score / float(total)
         minusscore = (float(total)-score) / float(total)
+
     score = plusscore - minusscore
-
-
     score = weight * score
 
     return score

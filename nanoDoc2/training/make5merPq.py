@@ -31,6 +31,8 @@ class Counter:
 
 from nanoDoc2.utils.PqFileReader import PqReader
 import sys
+import random
+
 def makeSamplePlan(refs,pqs,output_file,takeCnt):
 
     fivemerDict={}
@@ -117,6 +119,7 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
     for key in keys:
 
         d = datadict[key]
+        random.shuffle(d)
         d = np.ravel(d)
         tp = (keyidx,key,d)
         dataf.append(tp)
@@ -132,9 +135,7 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
     df = pd.DataFrame(dataf,
                       columns=['flg','fmer', 'signal'])
     pd.set_option('display.max_rows', None)
-    print(df)
-    print(df['signal'])
-    print(df['signal'].dtypes)
+
 
     pyarrow_table = Table.from_pandas(df, pschema)
     pq.write_table(
