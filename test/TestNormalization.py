@@ -483,7 +483,7 @@ if __name__ == "__main__":
    print(chrom,strand,r_st,r_en,q_st,q_en,cigar_str)
    lgenome = aligner.seq(chrom, start=r_st, end=r_en)
    print(lgenome)
-   seq, cigar, left, traceboundary, frombasecaller_idx, possiblemove_idx = ViterbiSegmantation.flipplopViterbiEach(lgenome,
+   seq, cigar, left, traceoffset, traceboundary, frombasecaller_idx, possiblemove_idx = ViterbiSegmantation.flipplopViterbiEach(lgenome,
                                                                                                                 chrom,
                                                                                                                 strand,
                                                                                                                 r_st,
@@ -492,6 +492,7 @@ if __name__ == "__main__":
                                                                                                                 q_en,
                                                                                                                 trace,
                                                                                                          move)
+
    print(len(signal),raw_start, viterbistart)
    signal_t = signal
    signal_v = signal[viterbistart:]

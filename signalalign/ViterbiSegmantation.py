@@ -44,9 +44,9 @@ def flipplopViterbiEach(lgenome,chrom,strand,r_st,r_en,q_st,q_en,trace,move):
 
     compactTracePositionMap = ru.toMap(possiblemove)
     #print("lgenome",lgenome)
-    seq,cigar,left,traceoffset,traceboundary,scorematrix = viterbi(lgenome, compactTrace, trace, compactTracePositionMap,strand, q_st,q_en,
+    seq,cigar,left,traceoffset,traceboundary = viterbi(lgenome, compactTrace, trace, compactTracePositionMap,strand, q_st,q_en,
                                               possiblemove_idx,frombasecaller_idx)
-    return seq, cigar, left,traceoffset, traceboundary, frombasecaller_idx,possiblemove_idx,scorematrix
+    return seq, cigar, left,traceoffset, traceboundary, frombasecaller_idx,possiblemove_idx
 
 
 import signalalign.OutputUtils as ou
@@ -69,7 +69,7 @@ def viterbi(lgenome,compactTrace,trace,compactTracePositionMap,strand,q_st,q_en,
         m = ru.getNear(compactTracePositionMap,q_st+n) - ctstart
         m_range.append(m)
 
-    tracebackPath,left,scorematrix = viterbiEach(compactTraceExon, lgenome,possiblemove_idx,frombasecaller_idx,ctstart,m_range)
+    tracebackPath,left = viterbiEach(compactTraceExon, lgenome,possiblemove_idx,frombasecaller_idx,ctstart,m_range)
     traceboundary = []
 
     b4 = 0
@@ -101,7 +101,7 @@ def viterbi(lgenome,compactTrace,trace,compactTracePositionMap,strand,q_st,q_en,
     seqlen = len(seq)
     cigar = ou.toCigar(tracebackPath,seqlen)
     traceoffset = ctstart
-    return seq,cigar,left,traceoffset,traceboundary,scorematrix
+    return seq,cigar,left,traceoffset,traceboundary
 
 
 def addPossibleChangePoint(trace, move):
@@ -356,11 +356,11 @@ def viterbiEach(compactTrace, localgenome, possiblemove_idx,frombasecaller_idx,c
     tracebackPath.reverse()
     trace = None
     compactTrace = None
-    #scorematrix = None
+    scorematrix = None
     scorematrix_os = None
-    #movematrix = None
+    movematrix = None
     #print("tracebackPath,left",left)
-    return tracebackPath,left,scorematrix
+    return tracebackPath,left
 
 
 

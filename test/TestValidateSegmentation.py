@@ -210,7 +210,7 @@ base_color = {'A':'#228b22','T':'#db7093','G':'#ff8c00','C':'#4169e1','A-':'#228
 def plotboth(signal_t, signal_v,traceboundary,trace,move,lgenome,cigar):
 
     limit = 25000
-    fig = plt.figure(figsize=(360, 40))
+    fig = plt.figure(figsize=(360, 20))
 
     gs = gridspec.GridSpec(2, 1, height_ratios=[0.5, 0.5])
     ax1 = fig.add_subplot(gs[0])
@@ -239,9 +239,9 @@ def plotboth(signal_t, signal_v,traceboundary,trace,move,lgenome,cigar):
     move_positions = move
     print(move)
 
-    for n in range(len(move_positions)):
-        if move[n] == 1:
-            ax1.axvline(x=n*10, ymin=0, ymax=1, color='black', alpha=0.2)
+    # for n in range(len(move_positions)):
+    #     if move[n] == 1:
+    #         ax1.axvline(x=n*10, ymin=0, ymax=1, color='black', alpha=0.2)
 
     print(traceboundary)
     # plot segmentation by viterbi algorithm
@@ -574,7 +574,7 @@ if __name__ == "__main__":
    # move = move[0:1500]
    # r_en = r_st +50
    # q_en = q_st +50
-   seq, cigar, left,traceoffset, traceboundary, frombasecaller_idx,possiblemove_idx,scorematrix = ViterbiSegmantation.flipplopViterbiEach(lgenome,
+   seq, cigar, left,traceoffset, traceboundary, frombasecaller_idx,possiblemove_idx = ViterbiSegmantation.flipplopViterbiEach(lgenome,
                                                                                                                 chrom,
                                                                                                                 strand,
                                                                                                                 r_st,
