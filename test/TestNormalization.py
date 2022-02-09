@@ -332,21 +332,47 @@ def toSeq(fastq):
     fa = fastq.split("\n")
     return fa[1]
 
+import pysam
+def getrelpos(cigar,pos):
+    a = pysam.AlignedSegment()
+    a.cigarstring = cigar
+    refpos = 0
+    relpos = 0
+    for cigaroprator, cigarlen in a.cigar:
+
+        if cigaroprator == 0:  # match
+
+            if refpos + cigarlen > pos:
+                return relpos + (pos - refpos)
+
+            relpos = relpos + cigarlen
+            refpos = refpos + cigarlen
+
+        elif cigaroprator == 2:  # Del
+            refpos = refpos + cigarlen
+        elif cigaroprator == 1 or cigaroprator == 3:  # Ins or N
+            relpos = relpos + cigarlen
+
+    return 0
+
 from statistics import mean
-def getMeans(signal,traceboundary):
+def getMeans(signal,traceboundary,cigar,seqlen):
 
     means = []
-    tbb4 = 0
-    for tb in traceboundary:
+    unit = 10
+    for n in range(0, seqlen - 5):
 
-        if tb == 0:
-            continue
-        if tb*10 > len(signal):
-            break
-        means.append(mean(signal[tbb4*10:tb*10]))
-        tbb4 = tb
+        relpos = getrelpos(cigar,n)
+        if relpos+1 < len(traceboundary):
+            start = traceboundary[relpos] * unit
+            end = traceboundary[relpos+1] * unit
+            subsignal = signal[start:end]
+            means.append(mean(subsignal))
+            print(n, relpos,start,end)
+
 
     return means
+
 
 def getMeansT(signal,traceboundary):
 
@@ -500,7 +526,8 @@ if __name__ == "__main__":
    signal_t = signal_t[raw_start:]
    signal_v = signal_v[::-1]  # reverse for rna
    print(len(signal_t),len(signal_v))
-   signalmeans = getMeans(signal_v,traceboundary)
+
+   signalmeans = getMeans(signal_v, traceboundary, cigar, len(lgenome))
    #signalmeans = getMeans(signal_v, frombasecaller_idx)
 
    tombosignalmean = getMeansT(signal_t,sgst)

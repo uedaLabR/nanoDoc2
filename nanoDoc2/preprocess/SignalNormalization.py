@@ -9,23 +9,47 @@ import pandas as pd
 from statistics import mean
 import numba
 
-def getMeans(signal,traceboundary):
+
+import pysam
+def getrelpos(cigar,pos):
+    a = pysam.AlignedSegment()
+    a.cigarstring = cigar
+    refpos = 0
+    relpos = 0
+    for cigaroprator, cigarlen in a.cigar:
+
+        if cigaroprator == 0:  # match
+
+            if refpos + cigarlen > pos:
+                return relpos + (pos - refpos)
+
+            relpos = relpos + cigarlen
+            refpos = refpos + cigarlen
+
+        elif cigaroprator == 2:  # Del
+            refpos = refpos + cigarlen
+        elif cigaroprator == 1 or cigaroprator == 3:  # Ins or N
+            relpos = relpos + cigarlen
+
+    return 0
+
+from statistics import mean
+def getMeans(signal,traceboundary,cigar,seqlen):
 
     means = []
-    tbb4 = 0
     unit = 10
-    for tb in traceboundary:
+    for n in range(0, seqlen - 5):
 
-        if (tb == 0) or (tbb4 == tb):
-            continue
-        if tb*unit >= len(signal):
-            break
-        subsignal = signal[tbb4*unit:tb*unit]
-        if len(subsignal) >=1:
+        relpos = getrelpos(cigar,n)
+        if relpos+1 < len(traceboundary):
+            start = traceboundary[relpos] * unit
+            end = traceboundary[relpos+1] * unit
+            subsignal = signal[start:end]
             means.append(mean(subsignal))
-        tbb4 = tb
+
 
     return means
+
 
 def theoryMean(fmercurrent,lgenome,strand):
 
@@ -163,11 +187,11 @@ def getFunction(scaleshifts,traceboundary,window,step):
 
 def normalizeSignal(read,traceboundary,fmercurrent):
 
-    # try:
-    #     return _normalizeSignal(read,traceboundary,fmercurrent)
-    # except:
-    #
-    #     print("normalize by window failed with " + read.read_id +" len="+str(len(read.sequence))+" , probably too short,sequence is normized as a whole")
+    try:
+        return _normalizeSignal(read,traceboundary,fmercurrent)
+    except:
+
+        print("normalize by window failed with " + read.read_id +" len="+str(len(read.sequence))+" , probably too short,sequence is normized as a whole")
 
     return  normalizeSignal_old(read,traceboundary,fmercurrent)
 
@@ -180,8 +204,9 @@ def _normalizeSignal(read,traceboundary,fmercurrent):
     lgenome = read.refgenome
     signal = read.signal
     strand = read.strand
+    cigar = read.cigar_str
 
-    signalmeans = getMeans(signal,traceboundary)
+    signalmeans = getMeans(signal,traceboundary,cigar,len(lgenome))
     theorymean = theoryMean(fmercurrent, lgenome ,strand)
     shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
     window = 60
@@ -235,8 +260,9 @@ def normalizeSignal_old(read,traceboundary,fmercurrent):
     lgenome = read.refgenome
     signal = read.signal
     strand = read.strand
+    cigar = read.cigar_str
 
-    signalmeans = getMeans(signal,traceboundary)
+    signalmeans = getMeans(signal,traceboundary,cigar,len(lgenome))
     theorymean = theoryMean(fmercurrent, lgenome,strand)
     shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
     scaleshift = calcNormalizeScaleLMS(signalmeans, theorymean)
@@ -249,7 +275,7 @@ def normalizeSignal_old(read,traceboundary,fmercurrent):
     signal = signal - low_limit
     signal = (signal / (high_limit-low_limit)) * 255
     downsamplesize = len(signal) // 2 #half the size
-    #signal = downsample(signal, downsamplesize)
+    signal = downsample(signal, downsamplesize)
     signal = np.around(signal.astype(np.float), 0)
     signal = np.clip(signal, 0, 255)
     signal = signal.astype(np.uint8)
