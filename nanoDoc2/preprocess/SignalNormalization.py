@@ -44,23 +44,15 @@ def getMeans(signal,traceboundary,cigar,seqlen):
         if relpos+1 < len(traceboundary):
             start = traceboundary[relpos] * unit
             end = traceboundary[relpos+1] * unit
-            subsignal = signal[start:end]
-            means.append(mean(subsignal))
+            if end < len(signal):
+                subsignal = signal[start:end]
+                means.append(mean(subsignal))
 
 
     return means
 
 
-def theoryMean(fmercurrent,lgenome,strand):
-
-    a = {}
-    with open(fmercurrent) as f:
-        cnt = 0
-        for line in f:
-            if cnt > 0:
-                data = line.split()
-                a[data[0]] = float(data[1])
-            cnt = cnt+1
+def theoryMean(fmerDict,lgenome,strand):
 
     means = []
     if strand == "-":
@@ -68,7 +60,7 @@ def theoryMean(fmercurrent,lgenome,strand):
         rg = lgenome
         for n in range(0, len(rg) - 5):
             fmer = rg[n:n + 5]
-            cv = a[fmer]
+            cv = fmerDict[fmer]
             means.append(cv)
 
     else:
@@ -78,7 +70,7 @@ def theoryMean(fmercurrent,lgenome,strand):
         for n in range(0,len(rg)-5):
 
            fmer = rg[n:n+5]
-           cv = a[fmer]
+           cv = fmerDict[fmer]
            means.append(cv)
 
         means.reverse()
@@ -185,18 +177,18 @@ def getFunction(scaleshifts,traceboundary,window,step):
     return f1,f2
 
 
-def normalizeSignal(read,traceboundary,fmercurrent):
+def normalizeSignal(read,traceboundary,fmerDict):
 
     try:
-        return _normalizeSignal(read,traceboundary,fmercurrent)
+        return _normalizeSignal(read,traceboundary,fmerDict)
     except:
 
         print("normalize by window failed with " + read.read_id +" len="+str(len(read.sequence))+" , probably too short,sequence is normized as a whole")
 
-    return  normalizeSignal_old(read,traceboundary,fmercurrent)
+    return  normalizeSignal_old(read,traceboundary,fmerDict)
 
 from scipy.interpolate import interp1d
-def _normalizeSignal(read,traceboundary,fmercurrent):
+def _normalizeSignal(read,traceboundary,fmerDict):
 
     low_limit = 40
     high_limit = 160
@@ -207,7 +199,8 @@ def _normalizeSignal(read,traceboundary,fmercurrent):
     cigar = read.cigar_str
 
     signalmeans = getMeans(signal,traceboundary,cigar,len(lgenome))
-    theorymean = theoryMean(fmercurrent, lgenome ,strand)
+
+    theorymean = theoryMean(fmerDict, lgenome ,strand)
     shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
     window = 60
     step = 5
@@ -252,7 +245,7 @@ def _normalizeSignal(read,traceboundary,fmercurrent):
     signal = signal.astype(np.uint8)
     return signal
 
-def normalizeSignal_old(read,traceboundary,fmercurrent):
+def normalizeSignal_old(read,traceboundary,fmerDict):
 
     low_limit = 50
     high_limit = 160
@@ -263,7 +256,7 @@ def normalizeSignal_old(read,traceboundary,fmercurrent):
     cigar = read.cigar_str
 
     signalmeans = getMeans(signal,traceboundary,cigar,len(lgenome))
-    theorymean = theoryMean(fmercurrent, lgenome,strand)
+    theorymean = theoryMean(fmerDict, lgenome,strand)
     shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
     scaleshift = calcNormalizeScaleLMS(signalmeans, theorymean)
     #do it by 50 bp bin

@@ -207,7 +207,7 @@ LOW_THRES_FOR_DEFULT_TRANS_PROP = 0.8
 BONUS_FOR_EACH_SEGMENT = 0.1
 count = 0
 
-bannedinterval = 50
+bannedinterval = 100
 @numba.jit(nopython=True)
 def rangeCheck(n,m,m_range):
 

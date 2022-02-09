@@ -14,6 +14,7 @@ from nanoDoc2.utils import FileIO
 from nanoDoc2.utils.nanoDocRead import nanoDocRead
 import nanoDoc2.preprocess.WriteToFile as wf
 import pyarrow.parquet as pq
+from nanoDoc2.utils import nanoDocUtils as nutils
 
 def get_number_of_core(MAX_CORE:int):
 
@@ -70,7 +71,8 @@ def preprocess(f5file,pathout,ref,fmercurrent,ncore,qvaluethres):
             except KeyError:
                 print('Key Error')
 
-    preprocess = partial(Preprocess.preprocess,fmercurrent=fmercurrent)
+    fmerdict = nutils.getCurrentDict(fmercurrent)
+    preprocess = partial(Preprocess.preprocess,fmerDict=fmerdict)
     print("finish mapping to reference")
     with Pool(ncore) as p:
         #Viterbi Segmentation/Normalize/

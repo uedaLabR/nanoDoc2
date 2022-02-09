@@ -180,8 +180,10 @@ def alginandremap(onerecord, aligner):
 
 from matplotlib import pyplot as plt
 from matplotlib import gridspec
+import numba
 
 import pysam
+@numba.jit(nopython=True)
 def getrelpos(cigar,pos):
     a = pysam.AlignedSegment()
     a.cigarstring = cigar

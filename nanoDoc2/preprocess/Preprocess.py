@@ -2,7 +2,7 @@ import nanoDoc2.preprocess.ViterbiSegmentation  as vs
 import nanoDoc2.preprocess.SignalNormalization as ss
 
 
-def preprocess(read,fmercurrent):
+def preprocess(read,fmerDict):
 
     #Viterbi segmentation
     seq, cigar, left, traceboundary, frombasecaller_idx,possiblemove_idx = vs.flipplopViterbiEach(read)
@@ -13,6 +13,6 @@ def preprocess(read,fmercurrent):
     read.cigar_str = cigar
     read.settraceboundary(traceboundary)
     #Signal Normalize
-    read.signal = ss.normalizeSignal(read,traceboundary,fmercurrent)
+    read.signal = ss.normalizeSignal(read,traceboundary,fmerDict)
     return read
 
