@@ -46,7 +46,8 @@ def getMeans(signal,traceboundary,cigar,seqlen):
             end = traceboundary[relpos+1] * unit
             if end < len(signal):
                 subsignal = signal[start:end]
-                means.append(mean(subsignal))
+                if len(subsignal) > 0:
+                    means.append(mean(subsignal))
 
 
     return means
