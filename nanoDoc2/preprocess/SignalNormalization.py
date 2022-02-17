@@ -180,19 +180,39 @@ def getFunction(scaleshifts,traceboundary,window,step):
 
 def normalizeSignal(read,traceboundary,fmerDict):
 
+    data = None
     try:
-        return _normalizeSignal(read,traceboundary,fmerDict)
+        data =  _normalizeSignal(read,traceboundary,fmerDict)
     except:
 
         print("normalize by window failed with " + read.read_id +" len="+str(len(read.sequence))+" , probably too short,sequence is normized as a whole")
+        data = normalizeSignal_as_whole(read,traceboundary,fmerDict)
 
-    return  normalizeSignal_old(read,traceboundary,fmerDict)
+    data = downsampleAndFormat(data)
+    return  data
+
+def downsampleAndFormat(signal):
+
+    low_limit = 40
+    high_limit = 160
+
+    downsamplesize = len(signal) // 2 #half the size
+    signal = downsample(signal, downsamplesize)
+
+    signal = np.clip(signal, low_limit, high_limit)
+    signal = ((signal-low_limit) / (high_limit-low_limit)) * 255
+    signal = np.around(signal.astype(np.float), 0)
+
+    signal = np.clip(signal, 0, 255)
+    signal = signal.astype(np.uint8)
+
+    return signal
+
 
 from scipy.interpolate import interp1d
 def _normalizeSignal(read,traceboundary,fmerDict):
 
-    low_limit = 40
-    high_limit = 160
+
 
     lgenome = read.refgenome
     signal = read.signal
@@ -204,7 +224,7 @@ def _normalizeSignal(read,traceboundary,fmerDict):
     theorymean = theoryMean(fmerDict, lgenome ,strand)
     shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
     window = 60
-    step = 5
+    step = 10
     start = 0
     end = window
     scaleshifts = []
@@ -225,8 +245,6 @@ def _normalizeSignal(read,traceboundary,fmerDict):
         b_for_max_min.append(b)
     #
 
-    downsamplesize = len(signal) // 2 #half the size
-    signal = downsample(signal, downsamplesize)
 
     functionA,functionB = getFunction(scaleshifts,traceboundary,window,step)
     num = np.arange(len(signal))
@@ -238,18 +256,9 @@ def _normalizeSignal(read,traceboundary,fmerDict):
     b_ary = np.clip(b_ary, min(b_for_max_min), max(b_for_max_min))
     signal = signal * a_ary + b_ary
 
-    signal = np.clip(signal, low_limit, high_limit)
-    signal = ((signal-low_limit) / (high_limit-low_limit)) * 255
-    signal = np.around(signal.astype(np.float), 0)
-
-    signal = np.clip(signal, 0, 255)
-    signal = signal.astype(np.uint8)
     return signal
 
-def normalizeSignal_old(read,traceboundary,fmerDict):
-
-    low_limit = 50
-    high_limit = 160
+def normalizeSignal_as_whole(read,traceboundary,fmerDict):
 
     lgenome = read.refgenome
     signal = read.signal
@@ -260,17 +269,8 @@ def normalizeSignal_old(read,traceboundary,fmerDict):
     theorymean = theoryMean(fmerDict, lgenome,strand)
     shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
     scaleshift = calcNormalizeScaleLMS(signalmeans, theorymean)
-    #do it by 50 bp bin
-
     a = scaleshift[0][0]
     b = scaleshift[1][0]
     signal = signal * a + b
-    signal = np.clip(signal, low_limit, high_limit)
-    signal = signal - low_limit
-    signal = (signal / (high_limit-low_limit)) * 255
-    downsamplesize = len(signal) // 2 #half the size
-    signal = downsample(signal, downsamplesize)
-    signal = np.around(signal.astype(np.float), 0)
-    signal = np.clip(signal, 0, 255)
-    signal = signal.astype(np.uint8)
+
     return signal

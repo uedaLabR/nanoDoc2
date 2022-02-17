@@ -121,6 +121,7 @@ class PqReader:
 
         self.indexdf = pd.DataFrame(indexlist,
                           columns=['fileidx','chr','strand','start','end'])
+        print(self.indexdf)
 
     def getDepth(self,chr, pos, strand):
 
@@ -156,7 +157,8 @@ class PqReader:
             datainpos = data.query('start <=' + str(pos-takemargin) + ' & end >=' + str(pos+takemargin))
             if datainpos is None or len(datainpos) ==0:
                 return None
-            datainpos = datainpos.sample(n=ntake)
+            if ntake < len(datainpos):
+                datainpos = datainpos.sample(n=ntake)
             return datainpos
 
         else:
@@ -244,7 +246,7 @@ class PqReader:
             filterlist = []
             filterTp = ('read_no', 'in', readids)
             filterlist.append(filterTp)
-            columns = ['read_no', 'chr', 'strand', 'start', 'end', 'cigar', 'offset', 'traceintervals', 'signal']
+            columns = ['read_no', 'chr', 'strand', 'start', 'end', 'cigar','genome','offset', 'traceintervals','trace','signal']
             if dataWithRow is None:
                 dataWithRow = pq.read_table(filepath, filters=filterlist, columns=columns).to_pandas()
 
@@ -256,16 +258,15 @@ class PqReader:
         self.bufferData = dataWithRow
 
 
-
     def getRowData(self, chr, strand, pos,takecnt=-1):
 
         if ((self.bufferData is None) or (chr != self.loadchr) or ((pos % binsize) == 0)):
             #print("loading row files",self.bufferData is None, chr != self.loadchr , (pos % binsize) == 0)
             self.load(chr, pos, strand)
 
-        sampled,sampledlen = self.getFormattedData(strand, pos,takecnt)
-        if sampledlen > self.maxreads_org:
-            sampled = sampled[0:self.maxreads_org*DATA_LENGTH]
+        traces,tracesItv,signals,sampledlen = self.getFormattedData(strand, pos,takecnt)
+        if takecnt > self.maxreads_org:
+            sampled = signals[0:self.maxreads_org*DATA_LENGTH]
             sampledlen = self.maxreads_org
 
         if sampledlen < takecnt and takecnt > 0:
@@ -273,16 +274,25 @@ class PqReader:
             if depth > takecnt:
                 #load and sample again since not enough sampling for this region
                 self.load(chr, pos, strand)
-                sampled, sampledlen = self.getFormattedData(strand, pos, takecnt)
+                traces,tracesItv,signals,takecnt = self.getFormattedData(strand, pos, takecnt)
 
         if takecnt == -1:
             depth = self.getDepth(chr, pos, strand)
             if sampledlen < depth:
                 self.load(chr, pos, strand)
-                sampled, sampledlen = self.getFormattedData(strand, pos, takecnt)
+                traces,tracesItv,signals,takecnt = self.getFormattedData(strand, pos, takecnt)
 
 
-        return sampled,sampledlen
+        return traces,tracesItv,signals,takecnt
+
+
+    def getRowSequence(self, chr, strand, pos,takecnt=-1):
+
+        if ((self.bufferData is None) or (chr != self.loadchr) or ((pos % binsize) == 0)):
+            #print("loading row files",self.bufferData is None, chr != self.loadchr , (pos % binsize) == 0)
+            self.load(chr, pos, strand)
+
+        return self.bufferData.iterrows()
 
     import pysam
     def correctCigar(self,targetPos,cigar):
@@ -308,24 +318,25 @@ class PqReader:
 
         return 0
 
-    def getRelativePos(self,strand,start,end,cigar,pos,traceintervalLen):
+    def getRelativePos(self,strand,_start,end,cigar,pos,traceintervalLen):
 
         #tp = (strand,start,end,cigar,pos,traceintervalLen)
-        rel = pos - start
-        rel = self.correctCigar(rel,cigar)
+        rel0 = pos - _start -1
+        rel = self.correctCigar(rel0,cigar)
         start = rel
         if start < 2:
             # do not use lower end
             return None
 
-        end = rel + 5
+        rel = pos - _start + 7
+        end = self.correctCigar(rel, cigar)
         if end >= traceintervalLen:
             end = traceintervalLen-1
         if start == end:
             return None
 
         # print(tp)
-        # print("start end",start,end)
+        print("start end",cigar,pos,_start,rel0,start,end)
         return start,end
 
 
@@ -340,9 +351,12 @@ class PqReader:
         # print(traceintervals)
         if relativeEnd >= len(traceintervals) or relativeStart >= len(traceintervals):
             return None
-        sig_start = offset + traceintervals[relativeStart] * TraceToSignalRatio
-        sig_end = offset + traceintervals[relativeEnd] * TraceToSignalRatio
-        return sig_start,sig_end
+        tracestart = traceintervals[relativeStart]
+        traceend = traceintervals[relativeEnd]
+        sig_start = offset + tracestart * TraceToSignalRatio
+        sig_end = offset + traceend * TraceToSignalRatio
+        #print("sig_start,sig_end",traceintervals[relativeStart],traceintervals[relativeEnd],sig_start,sig_end)
+        return traceintervals[relativeStart:relativeEnd],sig_start,sig_end,
 
 
     def getOneRow(self,row,strand, pos):
@@ -353,34 +367,45 @@ class PqReader:
         cigar = row['cigar']
         offset = row['offset']
         traceintervals = row['traceintervals']
+        trace = row['trace']
         signal = row['signal']
         #
         sted = self.calcStartEnd(strand,start,end,cigar,pos,offset,traceintervals)
         if sted is None:
             return None
-        sig_start, sig_end = sted
-        #print(sig_start, sig_end)
+        traceItv,sig_start, sig_end = sted
+        print(traceItv,sig_start, sig_end)
+        tracestart = traceItv[0]
+        traceend = traceItv[-1]+1
+        trace = trace[tracestart:traceend]
         signal = signal[sig_start:sig_end]
         #print(signal)
         #
         binnedSignal = binned(signal, DATA_LENGTH)
-        #print('bin signal len',len(binnedSignal))
-        return binnedSignal
+        print('bin signal len',len(trace),len(signal))
+        return trace,binnedSignal,traceItv
 
     def getFormattedData(self, strand, pos,_takecnt):
 
-        data = []
+        traces = []
+        traceItvs = []
+        signals = []
+
         takecnt = 0
         for index, row in self.bufferData.iterrows():
 
             rowdata = self.getOneRow(row, strand, pos)
-            if rowdata  is not None:
-                data.extend(rowdata)
+            if rowdata is not None:
+
+                trace, signal,traceItv = rowdata
+                traces.append(trace)
+                signals.append(signal)
+                traceItvs.append(traceItv)
                 takecnt = takecnt + 1
                 #print("takecnt",takecnt,_takecnt)
                 if _takecnt > 0 and takecnt == _takecnt:
                     break
 
-        data = np.array(data)
-        data = data / 256
-        return  data,takecnt
+        # data = np.array(data)
+        # data = data / 256
+        return traces,traceItvs,signals,takecnt

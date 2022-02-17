@@ -30,6 +30,7 @@ delmargin = 50
 margin = 10
 def flipplopViterbiEach(lgenome,chrom,strand,r_st,r_en,q_st,q_en,trace,move):
 
+    #print("")
     possiblemove = addPossibleChangePoint(trace, move)
     possiblemove_idx = ru.toIndex(possiblemove, SEGMENT_ALL)
     frombasecaller_idx = ru.toIndex(possiblemove, SEGMENT_FROM_BASECALLER)

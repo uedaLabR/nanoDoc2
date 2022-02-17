@@ -160,10 +160,10 @@ if __name__ == "__main__":
     ref2 = "/data/nanopore/reference/Cov2_Korea.fa"
 
     path_w = "/data/nanopore/nanoDoc2/5000each.pq"
-    refs= [ref1,ref2]
+    refs= [ref1]
     pq1 = "/data/nanopore/nanoDoc2/testCurlcakeIVT"
     pq2 = "/data/nanopore/nanoDoc2/testSARSCOV2"
-    pqs = [pq1,pq2]
+    pqs = [pq1]
     #
 
     # fr = PqReader(pq1, 4000)

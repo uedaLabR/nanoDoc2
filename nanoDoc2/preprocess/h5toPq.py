@@ -40,6 +40,7 @@ def preprocess(f5file,pathout,ref,fmercurrent,ncore,qvaluethres):
                 trace = read.get_analysis_dataset(basecall_run, "BaseCalled_template/Trace")
                 move = read.get_analysis_dataset(basecall_run, "BaseCalled_template/Move")
                 row_data = read.get_raw_data(scale=True)
+
                 #
                 seq = fastq.split("\n")[1]
                 chrom, strand, r_st, r_en, q_st, q_en, cigar_str = "", 0, 0, 0, 0, 0, ""
@@ -106,8 +107,9 @@ def _mergeParquet(dirinfo):
         rec = records(df)
         data.extend(rec)
 
+
     df = pd.DataFrame(data,
-                      columns=['read_id','chr', 'strand', 'start', 'end', 'cigar', 'fastq','offset','traceintervals', 'trace','signal'])
+                      columns=['read_id','chr', 'strand', 'start', 'end', 'cigar','genome','fastq','offset','traceintervals', 'trace','signal'])
 
     df_s = df.sort_values('start')
     df_s = df_s.reset_index()

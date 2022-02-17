@@ -20,6 +20,7 @@ class nanoDocRead():
 
         tracelen = len(trace)
         self.signal = signal[len(signal) - 10 * tracelen:].astype(np.float64)
+        self.normSignal = None
 
         if strand == 1:
             self.trace = trace[::-1].astype(np.int16)
