@@ -109,7 +109,7 @@ def _mergeParquet(dirinfo):
 
 
     df = pd.DataFrame(data,
-                      columns=['read_id','chr', 'strand', 'start', 'end', 'cigar','genome','fastq','offset','traceintervals', 'trace'])
+                      columns=['read_id','chr', 'strand', 'start', 'end', 'cigar','genome','fastq','offset','traceintervals', 'trace','signal'])
 
     df_s = df.sort_values('start')
     df_s = df_s.reset_index()
@@ -158,13 +158,13 @@ def h5tosegmantedPq(path,pathout,ref,fmercurrent,MAX_CORE,qvaluethres):
 
 if __name__ == "__main__":
 
-    path = '/data/nanopore/IVT/m6aIVT/multifast5/'
-    pathout = '/data/nanopore/nanoDoc2/testCurlcakeIVT'
-    ref = "/data/nanopore/reference/Curlcake.fa"
+    # path = '/data/nanopore/IVT/m6aIVT/multifast5/'
+    # pathout = '/data/nanopore/nanoDoc2/testCurlcakeIVT'
+    # ref = "/data/nanopore/reference/Curlcake.fa"
 
-    # path = '/data/nanopore/IVT/koreaIVT/multifast5/'
-    # pathout = '/data/nanopore/nanoDoc2/testSARSCOV2'
-    # ref = "/data/nanopore/reference/Cov2_Korea.fa"
+    path = '/data/nanopore/IVT/koreaIVT/multifast5/'
+    pathout = '/data/nanopore/nanoDoc2/testSARSCOV2'
+    ref = "/data/nanopore/reference/Cov2_Korea.fa"
     fmercurrent = "/data/nanopore/signalStatRNA180.txt"
 
     MAX_CORE = 24

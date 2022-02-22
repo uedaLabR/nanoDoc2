@@ -22,7 +22,7 @@ def _writeToFile(item,pathout,filename):
     os.makedirs(pathout + "/" + binkey, exist_ok=True)
     file_out = pathout + "/" + binkey + "/" + filename +"_pre.pq"
     df = pd.DataFrame(datalist,
-                      columns=['read_id', 'chr', 'strand', 'start', 'end','cigar','genome','fastq','offset','traceintervals','trace','signal'])
+                      columns=['read_id', 'chr', 'strand', 'start', 'end','cigar','genome','fastq','offset','traceintervals','trace'])
 
     #pd.to_pickle(df, file_out)
     FileIO.writeToPq(df, file_out)
@@ -67,6 +67,19 @@ def decodeZippedTrace(trace):
 
     return list(map(decode16bit, trace))
 
+def to4Trace(a_trace):
+
+    _a = max(a_trace[0], a_trace[4])
+    _c = max(a_trace[1], a_trace[5])
+    _g = max(a_trace[2], a_trace[6])
+    _u = max(a_trace[3], a_trace[7])
+    return (_a,_c,_g,_u)
+
+def convert4Trace(trace):
+
+    data = np.array(list(map(to4Trace, trace)))
+    return data.flatten()
+
 def decode16bit(a_trace):
 
     a = a_trace | 0b1111000000000000 >> 12
@@ -89,17 +102,17 @@ def toTuple(read):
     strand = read.strand
     if strand == -1:
         strand=0
-    trace = convertTo16bit(read.trace)
-    return read.read_id,read.chrom, strand, read.r_st, read.r_en,read.cigar_str,read.refgenome, read.fastq,offset,traceintervals,trace,read.normSignal
-
+    #trace = convertTo16bit(read.trace)
+    trace = convert4Trace(read.trace)
+    return read.read_id,read.chrom, strand, read.r_st, read.r_en,read.cigar_str,read.refgenome, read.fastq,offset,traceintervals,trace
 
 def writeToFile(pathout,ncore,reads,filename):
 
     datadict = {}
     for read in reads:
 
-        if read.normSignal is None:
-            continue
+        # if read.normSignal is None:
+        #     continue
         binkey = getBinkey(read)
         if binkey not in datadict:
             datadict[binkey] = []

@@ -29,7 +29,7 @@ class Counter:
     def getList(self):
         return self.l
 
-from nanoDoc2.utils.PqFileReader import PqReader
+from nanoDoc2.utils.PqTraceFileReader import PqReader
 import sys
 import random
 
@@ -40,7 +40,7 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
     cnt = 0
     for ref in refs:
         records = SeqIO.parse(ref, 'fasta')
-        fr = PqReader(pqs[cnt], 4000)
+        fr = PqReader(pqs[cnt], ref,4000)
 
         for record in records:
            print(record.name)
@@ -97,18 +97,19 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
         #
         if pfidx != fileidx:
             path = pqs[fileidx]
+            ref = refs[fileidx]
             print("init reader")
-            fr = PqReader(path, 4000)
+            fr = PqReader(path,ref, 4000)
 
-        traces,traceItvs,data,cnt = fr.getRowData(chr, True, pos,takecnt=takecnt)
-        print(p,len(data),cnt)
+        traces,takecnt = fr.getRowData(chr, True, pos,takecnt=takecnt)
+        print(p,len(traces),takecnt)
         pfidx = fileidx
-        if len(data) > 0:
+        if len(traces) > 0:
             if fmer in datadict:
-                datadict[fmer].extend(data)
+                datadict[fmer].extend(traces)
             else:
                 d = []
-                d.extend(data)
+                d.extend(traces)
                 datadict[fmer] = d
 
     #write to parquet
@@ -120,20 +121,22 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
 
         d = datadict[key]
         random.shuffle(d)
-        d = np.ravel(d)
-        tp = (keyidx,key,d)
-        dataf.append(tp)
-        keyidx +=1
+        for da in d:
+            da = da.flatten()
+            tp = (keyidx,key,da)
+            dataf.append(tp)
+            keyidx += 1
+
 
     pschema = schema(
         [
             ('flg', uint32()),
             ('fmer', string()),
-            ('signal', list_(float32()))
+            ('traces', list_(uint8()))
         ]
     )
     df = pd.DataFrame(dataf,
-                      columns=['flg','fmer', 'signal'])
+                      columns=['flg','fmer', 'traces'])
     pd.set_option('display.max_rows', None)
 
 
@@ -159,11 +162,11 @@ if __name__ == "__main__":
     ref1 = "/data/nanopore/reference/Curlcake.fa"
     ref2 = "/data/nanopore/reference/Cov2_Korea.fa"
 
-    path_w = "/data/nanopore/nanoDoc2/5000each.pq"
-    refs= [ref1]
+    path_w = "/data/nanopore/nanoDoc2/5000traceeach.pq"
+    refs= [ref1,ref2]
     pq1 = "/data/nanopore/nanoDoc2/testCurlcakeIVT"
     pq2 = "/data/nanopore/nanoDoc2/testSARSCOV2"
-    pqs = [pq1]
+    pqs = [pq1,pq2]
     #
 
     # fr = PqReader(pq1, 4000)

@@ -80,8 +80,8 @@ if __name__ == "__main__":
     #gm = GraphManager(pathout)
     datab =[]
     #depth = fr.getRowData("cc6m_2244_t7_ecorv", True, 2000)
-    pos = 400
-    traces,traceItvs,signals,takecnt = fr.getRowData("cc6m_2244_t7_ecorv", True, pos, takecnt=10)
+    pos = 1050
+    traces,traceItvs,signals,takecnt = fr.getRowData("cc6m_2244_t7_ecorv", True, pos, takecnt=50)
     plotGraph(traces,traceItvs,signals)
 
     # print(datab)

@@ -19,7 +19,8 @@ class nanoDocRead():
         self.cigar_str = cigar_str
 
         tracelen = len(trace)
-        self.signal = signal[len(signal) - 10 * tracelen:].astype(np.float64)
+        adoptorlen = (len(signal) - (10 * tracelen))
+        self.signal = signal[adoptorlen:].astype(np.float64)
         self.normSignal = None
 
         if strand == 1:

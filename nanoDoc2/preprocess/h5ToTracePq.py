@@ -9,7 +9,7 @@ import multiprocessing
 from multiprocessing import Pool
 from functools import partial
 
-from nanoDoc2.preprocess import Preprocess
+from nanoDoc2.preprocess import Preprocess, PreprocessTrace
 from nanoDoc2.utils import FileIO
 from nanoDoc2.utils.nanoDocRead import nanoDocRead
 import nanoDoc2.preprocess.WriteToFile as wf
@@ -27,7 +27,7 @@ def get_fast5_files_in_dir(directory:str):
     return list(sorted(glob.glob(directory + '/*.fast5',recursive=True)))
 
 import os
-def preprocess(f5file,pathout,ref,fmercurrent,ncore,qvaluethres):
+def preprocess(f5file,pathout,ref,ncore,qvaluethres):
 
     reads = []
     ret = []
@@ -72,8 +72,8 @@ def preprocess(f5file,pathout,ref,fmercurrent,ncore,qvaluethres):
             except KeyError:
                 print('Key Error')
 
-    fmerdict = nutils.getCurrentDict(fmercurrent)
-    preprocess = partial(Preprocess.preprocess,fmerDict=fmerdict)
+
+    preprocess = partial(PreprocessTrace.preprocess)
     print("finish mapping to the reference")
     with Pool(ncore) as p:
         #Viterbi Segmentation/Normalize/
@@ -138,7 +138,7 @@ def mergeParquet(pathout,ncore):
         p.map(_mergeParquet,dirlistTohandle)
 
 
-def h5tosegmantedPq(path,pathout,ref,fmercurrent,MAX_CORE,qvaluethres):
+def h5tosegmantedPq(path,pathout,ref,MAX_CORE,qvaluethres):
 
     f5list = get_fast5_files_in_dir(path)
     ncore = get_number_of_core(MAX_CORE=MAX_CORE)
@@ -146,8 +146,8 @@ def h5tosegmantedPq(path,pathout,ref,fmercurrent,MAX_CORE,qvaluethres):
     for f5file in f5list:
 
         print(cnt,f5file)
-        preprocess(f5file,pathout,ref,fmercurrent,ncore,qvaluethres)
-        cnt = cnt+1
+        preprocess(f5file,pathout,ref,ncore,qvaluethres)
+        cnt += 1
 
     #marge Parquet
     print("merge files")
@@ -158,15 +158,15 @@ def h5tosegmantedPq(path,pathout,ref,fmercurrent,MAX_CORE,qvaluethres):
 
 if __name__ == "__main__":
 
-    path = '/data/nanopore/IVT/m6aIVT/multifast5/'
-    pathout = '/data/nanopore/nanoDoc2/testCurlcakeIVT'
-    ref = "/data/nanopore/reference/Curlcake.fa"
+    # path = '/data/nanopore/IVT/m6aIVT/multifast5/'
+    # pathout = '/data/nanopore/nanoDoc2/testCurlcakeIVT'
+    # ref = "/data/nanopore/reference/Curlcake.fa"
 
-    # path = '/data/nanopore/IVT/koreaIVT/multifast5/'
-    # pathout = '/data/nanopore/nanoDoc2/testSARSCOV2'
-    # ref = "/data/nanopore/reference/Cov2_Korea.fa"
-    fmercurrent = "/data/nanopore/signalStatRNA180.txt"
+    path = '/data/nanopore/IVT/koreaIVT/multifast5/'
+    pathout = '/data/nanopore/nanoDoc2/testSARSCOV2'
+    ref = "/data/nanopore/reference/Cov2_Korea.fa"
+    #fmercurrent = "/data/nanopore/signalStatRNA180.txt"
 
     MAX_CORE = 24
     qvaluethres = 5
-    h5tosegmantedPq(path,pathout,ref,fmercurrent,MAX_CORE,qvaluethres)
+    h5tosegmantedPq(path,pathout,ref,MAX_CORE,qvaluethres)

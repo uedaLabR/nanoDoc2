@@ -24,20 +24,19 @@ def prepData(df1):
     totalcnt = 0
     labelidx = df1["fmer"].unique().tolist()
 
-    cnt = 0
+    totalcnt = 0
     for idx, row in df1.iterrows():
 
-        #flg = labelidx.index(row[0])
-        #signal = np.array(list(row[1]))
-        flg = row[0]
-        signal = np.array(row[2])
+        flg = labelidx.index(row[1])
+        trace = np.array(row[2])
 
-        test_x.extend(signal[0:DATA_LENGTH*1000])
-        test_y.extend([flg]*1000)
-        train_x.extend(signal[DATA_LENGTH*1000:DATA_LENGTH*4000])
-        train_y.extend([flg]*3000)
-        print(signal)
-        print(flg,len(signal))
+        if totalcnt%5 == 0:
+            test_x.extend(trace)
+            test_y.extend(flg)
+        else:
+            train_x.extend(trace)
+            train_y.extend(flg)
+
         # if cnt == 30000:
         #     break
         totalcnt += 1
@@ -60,8 +59,9 @@ def prepData(df1):
     train_x = train_x /255
     test_x = test_x /255
 
-    train_x = np.reshape(train_x, (-1, DATA_LENGTH, 1))
-    test_x = np.reshape(test_x, (-1, DATA_LENGTH, 1))
+    DATA_LENGTH_UNIT = 8*5
+    train_x = np.reshape(train_x, (-1, DATA_LENGTH_UNIT, 4))
+    test_x = np.reshape(test_x, (-1, DATA_LENGTH_UNIT, 4))
     train_y = np.reshape(train_y, (-1, 1,))
     test_y = np.reshape(test_y, (-1, 1,))
 
@@ -94,6 +94,7 @@ def _main(s_data, s_out):
     batch_size = 512
     gpu_count = 1
     samplesize = 2400
+
 
     shape1 = (None, DATA_LENGTH, 1)
     df = loadpq(s_data, samplesize)
@@ -133,6 +134,6 @@ def _main(s_data, s_out):
 
 if __name__ == '__main__':
 
-    s_data = "/data/nanopore/nanoDoc2/5000each.pq"
-    s_out = "/data/nanopore/IVT/weight/"
+    s_data = "/data/nanopore/nanoDoc2/5000traceeach.pq"
+    s_out = "/data/nanopore/IVT_Trace/weight/"
     main(s_data, s_out)

@@ -188,7 +188,8 @@ def normalizeSignal(read,traceboundary,fmerDict):
         print("normalize by window failed with " + read.read_id +" len="+str(len(read.sequence))+" , probably too short,sequence is normized as a whole")
         data = normalizeSignal_as_whole(read,traceboundary,fmerDict)
 
-    data = downsampleAndFormat(data)
+    if data is not None:
+        data = downsampleAndFormat(data)
     return  data
 
 def downsampleAndFormat(signal):
@@ -223,6 +224,9 @@ def _normalizeSignal(read,traceboundary,fmerDict):
 
     theorymean = theoryMean(fmerDict, lgenome ,strand)
     shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
+    if signalmeans is None:
+        return signal
+
     window = 60
     step = 10
     start = 0
@@ -268,7 +272,15 @@ def normalizeSignal_as_whole(read,traceboundary,fmerDict):
     signalmeans = getMeans(signal,traceboundary,cigar,len(lgenome))
     theorymean = theoryMean(fmerDict, lgenome,strand)
     shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
+
+    if signalmeans is None:
+        return signal
+
     scaleshift = calcNormalizeScaleLMS(signalmeans, theorymean)
+
+    if scaleshift is None:
+        return signal
+
     a = scaleshift[0][0]
     b = scaleshift[1][0]
     signal = signal * a + b

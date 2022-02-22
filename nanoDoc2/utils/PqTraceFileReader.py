@@ -19,48 +19,129 @@ from scipy.optimize import curve_fit
 import os
 from numba import jit,u1,i8,f8
 
-DATA_LENGTH_UNIT = 30
-DATA_LENGTH = DATA_LENGTH_UNIT * 5 + 10
-TraceToSignalRatio = 5
+DATA_LENGTH_UNIT = 8
+SEQ_TAKE_MARGIN = 3
 binsize = 1000
 takemargin = 10
 
 from scipy import ndimage as ndi
 import statistics
+@jit
+def eachScore(nuc,atrace):
 
 
-def binned(trimsignal, trimlength, mode=1):
+    if nuc == 'A':
+        nucidx = 0
+    elif nuc == 'C':
+        nucidx = 1
+    elif nuc == 'G':
+        nucidx = 2
+    else:
+        nucidx = 3
 
-    if len(trimsignal) == trimlength:
-        return trimsignal  # not very likely to happen
+    rowsum =np.sum(atrace, axis=1)
+    sum = np.sum(rowsum)
+    matchsum = rowsum[nucidx]
+    return matchsum/sum
 
-    if len(trimsignal) > trimlength:
+def getScore(subtraces,seq):
+
+    score = 0
+    upto = min(len(seq),len(subtraces))
+    for n in range(upto):
+        nuc = seq[n]
+        atrace = subtraces[n]
+        ascore = eachScore(nuc,atrace)
+        score +=ascore
+    return score
+
+
+def analyzeIdxShift(subtraces,rseq):
+
+    maxidx = 0
+    maxscore = 0
+    for n in range(6):
+        seq = rseq[n:n+10]
+        score = getScore(subtraces,seq)
+        idx = n-3
+        if score > maxscore:
+            maxidx = idx
+
+    #print("maxidx",maxidx)
+    return maxidx
+
+
+def binned(trimtrace, traceItv,trimUnitLength,rseq):
+
+    start = 0
+    prev = 0
+    subtraces = []
+    for n in range(len(traceItv)):
+        if n == 0:
+            start = traceItv[0]
+            prev = 0
+            continue
+        s = prev
+        e =  traceItv[n] - start
+        subtrace = trimtrace[::,s:e]
+        prev = e
+        subtraces.append(subtrace)
+
+    #analizeIdx
+    idx = analyzeIdxShift(subtraces,rseq)
+    nret = None
+    if len(subtraces) > 0:
+        for m in range(idx,min(idx+5,len(subtraces))):
+
+            subtrace = subtraces[m]
+            bineach = binnedEach(subtrace, trimUnitLength)
+            #print("bineach",bineach)
+            if nret is None:
+                nret = bineach
+            else:
+                nret = np.concatenate((nret, bineach), axis=1)
+
+    #print("n",n,nret.shape[1])
+    datalen = 0
+    if nret is not None:
+        datalen = nret.shape[1]
+    leftlen = trimUnitLength * 5 - datalen
+    if leftlen > 0:
+        zeros = np.zeros((4, leftlen))
+        if nret is not None:
+            nret = np.concatenate((nret, zeros), axis=1)
+        else:
+            nret = zeros
+
+    return nret
+
+
+def binnedEach(trimtrace, trimlength):
+
+    tracelen = trimtrace.shape[1]
+
+    if tracelen == trimlength:
+        return trimtrace  # not very likely to happen
+
+    if tracelen > trimlength:
         # trim from first
-        lefthalf = ((len(trimsignal) - trimlength)) // 2 - 1
-        #print("trim",len(trimsignal),trimlength,lefthalf,len(trimsignal[lefthalf:lefthalf+trimlength]))
-        return trimsignal[lefthalf:lefthalf+trimlength]
+        lefthalf = (tracelen - trimlength) // 2 - 1
+        return trimtrace[::,lefthalf:lefthalf+trimlength]
 
     else:
         #
-        ret = np.zeros(trimlength)
-        diff = np.array([1, 0, -1])
-        trimsignal = trimsignal.astype(np.float32)
-        med = statistics.median(trimsignal)
-        diffsig = ndi.convolve(trimsignal, diff)
-        sigma = np.std(diffsig) / 10
 
-        siglen = len(trimsignal)
-        left = trimlength - siglen
+        left = trimlength - tracelen
         lefthalf = left // 2
+        zeroleft = [0] * lefthalf
+        leftlen = trimlength - tracelen - lefthalf
+        zeroright = [0] * leftlen
+        ret = []
+        for row in trimtrace:
+            data = np.concatenate([zeroleft, row, zeroright])
+            ret.append(data)
 
-        rand1 = np.random.rand(lefthalf) * sigma
-        rand1 = rand1 + med
-        leftlen = trimlength - siglen - lefthalf
-        rand2 = np.random.rand(leftlen) * sigma
-        rand2 = rand2 + med
-        #
-        ret = np.concatenate([rand1, trimsignal, rand2])
-
+        ret = np.array(ret)
         return ret
 
 def intervalToAbsolute(intervals):
@@ -83,13 +164,16 @@ def intervalToAbsolute(intervals):
     return np.array(ret)
 
 import pyarrow.parquet as pq
+import mappy as mp
 
 class PqReader:
 
-    def __init__(self, path,maxreads = 2000):
+    def __init__(self, path,ref,maxreads = 2000):
 
         self.path = path
         self.batch = None
+        print("ref",ref)
+        self.a = mp.Aligner(ref)
         self.maxreads = int(maxreads * 1.2)# take little more sample since some reads disqualify
         self.maxreads_org = maxreads
         self.bufferData = None
@@ -193,6 +277,7 @@ class PqReader:
     # ('signal', list_(uint8()))
     def load(self,chr, pos, strand):
 
+        print("loding data")
         self.loadchr = chr
         #extract parquet file contain reads in this region
         query = 'start <= ' + str(pos) + ' & end >= ' + str(pos) + ' & chr == "' + chr + '" & strand == ' + str(
@@ -246,7 +331,7 @@ class PqReader:
             filterlist = []
             filterTp = ('read_no', 'in', readids)
             filterlist.append(filterTp)
-            columns = ['read_no', 'chr', 'strand', 'start', 'end', 'cigar','genome','offset', 'traceintervals','trace','signal']
+            columns = ['read_no', 'chr', 'strand', 'start', 'end', 'cigar','genome','offset', 'traceintervals','trace']
             if dataWithRow is None:
                 dataWithRow = pq.read_table(filepath, filters=filterlist, columns=columns).to_pandas()
 
@@ -260,30 +345,37 @@ class PqReader:
 
     def getRowData(self, chr, strand, pos,takecnt=-1):
 
+        if pos - SEQ_TAKE_MARGIN < 0:
+            return None
+        ADDITONAL_MARGIN = 3
+        margin = SEQ_TAKE_MARGIN+ADDITONAL_MARGIN
+        rseq = self.a.seq(chr,start=(pos-margin),end=(pos+margin))
+
         if ((self.bufferData is None) or (chr != self.loadchr) or ((pos % binsize) == 0)):
             #print("loading row files",self.bufferData is None, chr != self.loadchr , (pos % binsize) == 0)
             self.load(chr, pos, strand)
 
-        traces,tracesItv,signals,sampledlen = self.getFormattedData(strand, pos,takecnt)
+        traces,sampledlen = self.getFormattedData(strand, pos,rseq,takecnt)
         if takecnt > self.maxreads_org:
-            sampled = signals[0:self.maxreads_org*DATA_LENGTH]
+            sampled = traces[0:self.maxreads_org]
             sampledlen = self.maxreads_org
+            traces = sampled
 
         if sampledlen < takecnt and takecnt > 0:
             depth = self.getDepth(chr, pos, strand)
             if depth > takecnt:
                 #load and sample again since not enough sampling for this region
                 self.load(chr, pos, strand)
-                traces,tracesItv,signals,takecnt = self.getFormattedData(strand, pos, takecnt)
+                traces,sampledlen = self.getFormattedData(strand, pos,rseq, takecnt)
 
         if takecnt == -1:
             depth = self.getDepth(chr, pos, strand)
             if sampledlen < depth:
                 self.load(chr, pos, strand)
-                traces,tracesItv,signals,takecnt = self.getFormattedData(strand, pos, takecnt)
+                traces,sampledlen = self.getFormattedData(strand, pos,rseq, takecnt)
 
 
-        return traces,tracesItv,signals,takecnt
+        return traces,sampledlen
 
 
     def getRowSequence(self, chr, strand, pos,takecnt=-1):
@@ -321,14 +413,15 @@ class PqReader:
     def getRelativePos(self,strand,_start,end,cigar,pos,traceintervalLen):
 
         #tp = (strand,start,end,cigar,pos,traceintervalLen)
-        rel0 = pos - _start -1
+
+        rel0 = pos - _start - SEQ_TAKE_MARGIN
         rel = self.correctCigar(rel0,cigar)
         start = rel
         if start < 2:
             # do not use lower end
             return None
 
-        rel = pos - _start + 7
+        rel = pos - _start + 6 + SEQ_TAKE_MARGIN
         end = self.correctCigar(rel, cigar)
         if end >= traceintervalLen:
             end = traceintervalLen-1
@@ -345,22 +438,19 @@ class PqReader:
         rp = self.getRelativePos(strand,start,end,cigar,pos,len(traceintervals))
         if rp is None:
             return None
-
+        #print("offset", offset)
         relativeStart, relativeEnd = rp
         # print("relativeStart, relativeEnd",relativeStart, relativeEnd)
         # print(traceintervals)
         if relativeEnd >= len(traceintervals) or relativeStart >= len(traceintervals):
             return None
-
         tracestart = traceintervals[relativeStart]
         traceend = traceintervals[relativeEnd]
-        sig_start = offset + tracestart * TraceToSignalRatio
-        sig_end = offset + traceend * TraceToSignalRatio
         #print("sig_start,sig_end",traceintervals[relativeStart],traceintervals[relativeEnd],sig_start,sig_end)
-        return traceintervals[relativeStart:relativeEnd],sig_start,sig_end,
+        return traceintervals[relativeStart:relativeEnd]
 
 
-    def getOneRow(self,row,strand, pos):
+    def getOneRow(self,row,strand, pos,rseq):
 
         chr = row['chr']
         start = row['start']
@@ -369,42 +459,37 @@ class PqReader:
         offset = row['offset']
         traceintervals = row['traceintervals']
         trace = row['trace']
-        signal = row['signal']
         #
         sted = self.calcStartEnd(strand,start,end,cigar,pos,offset,traceintervals)
         if sted is None:
             return None
-        traceItv,sig_start, sig_end = sted
+        traceItv = sted
         #print(traceItv,sig_start, sig_end)
         if len(traceItv) < 2:
             return None
 
         tracestart = traceItv[0]
-        traceend = traceItv[-1]+1
-        trace = trace[tracestart:traceend]
-        signal = signal[sig_start:sig_end]
+        traceend = traceItv[-1]
+        trace = trace.reshape(-1,4)
+        trace = trace.T
+        trace = trace[::,tracestart:traceend]
+
         #print(signal)
         #
-        binnedSignal = binned(signal, DATA_LENGTH)
-        #print('bin signal len',len(trace),len(signal))
-        return trace,binnedSignal,traceItv
+        binnedTrace = binned(trace,traceItv,DATA_LENGTH_UNIT,rseq)
+        return binnedTrace
 
-    def getFormattedData(self, strand, pos,_takecnt):
+    def getFormattedData(self, strand, pos,rseq,_takecnt):
 
         traces = []
-        traceItvs = []
-        signals = []
 
         takecnt = 0
         for index, row in self.bufferData.iterrows():
 
-            rowdata = self.getOneRow(row, strand, pos)
-            if rowdata is not None:
+            trace = self.getOneRow(row, strand, pos, rseq)
+            if trace is not None:
 
-                trace, signal,traceItv = rowdata
                 traces.append(trace)
-                signals.append(signal)
-                traceItvs.append(traceItv)
                 takecnt = takecnt + 1
                 #print("takecnt",takecnt,_takecnt)
                 if _takecnt > 0 and takecnt == _takecnt:
@@ -412,4 +497,4 @@ class PqReader:
 
         # data = np.array(data)
         # data = data / 256
-        return traces,traceItvs,signals,takecnt
+        return traces,takecnt
