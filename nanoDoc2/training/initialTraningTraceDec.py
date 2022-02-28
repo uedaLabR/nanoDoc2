@@ -33,6 +33,7 @@ def prepData(df1):
         if totalcnt%5 == 0:
             test_x.extend(trace)
             test_y.append(flg)
+        #elif totalcnt%5 < 3:
         else:
             train_x.extend(trace)
             train_y.append(flg)
@@ -88,7 +89,7 @@ def main(s_data, s_out):
         #tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
         _main(s_data, s_out)
 
-import nanoDoc2.network.cnnwavenettrace as cnnwavenettrace
+import nanoDoc2.network.cnnwavenet_decfilter as cnnwavenet_decfilter
 def _main(s_data, s_out):
 
     batch_size = 512
@@ -104,13 +105,12 @@ def _main(s_data, s_out):
 
     # with tf.device("/cpu:0"):
 
-    model = cnnwavenettrace.build_network(shape=shape1, num_classes=num_classes)
+    model = cnnwavenet_decfilter.build_network(shape=shape1, num_classes=num_classes)
     model.summary()
 
     # model = multi_gpu_model(model, gpus=gpu_count)  # add
-    inweight = s_out+"/weightwn_keras.hdf"
 
-    outweight = s_out + "/weightwn_keras.hdf"
+    outweight = s_out + "/weightwn_keras_dec.hdf"
     modelCheckpoint = ModelCheckpoint(filepath=outweight,
                                       monitor='val_accuracy',
                                       verbose=1,
@@ -127,10 +127,10 @@ def _main(s_data, s_out):
                   metrics=['accuracy'])
     # model.load_weights(inweight)
 
-    history = model.fit(train_x, train_y, epochs=200, batch_size=batch_size, verbose=1,
+    history = model.fit(train_x, train_y, epochs=50, batch_size=batch_size, verbose=1,
               shuffle=True, validation_data=(test_x, test_y),callbacks=[modelCheckpoint])
 
-    historypath ="/data/nanopore/IVT/lealent_log.txt"
+    historypath ="/data/nanopore/IVT/lealent_dec_log.txt"
     hist_df = pd.DataFrame(history.history)
     hist_df.to_csv(historypath)
 
@@ -138,5 +138,5 @@ def _main(s_data, s_out):
 if __name__ == '__main__':
 
     s_data = "/data/nanopore/nanoDoc2/5000traceeachFix.pq"
-    s_out = "/data/nanopore/IVT_Trace/weight/"
+    s_out = "/data/nanopore/IVT_Trace/weight_dec/"
     main(s_data, s_out)

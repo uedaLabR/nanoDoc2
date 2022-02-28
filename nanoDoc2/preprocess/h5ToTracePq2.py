@@ -162,13 +162,13 @@ if __name__ == "__main__":
     # pathout = '/data/nanopore/nanoDoc2/testCurlcakeIVT'
     # ref = "/data/nanopore/reference/Curlcake.fa"
 
-    path = '/data/nanopore/rRNA/1623_ivt-multi/multifast5/'
-    pathout = '/data/nanopore/nanoDoc2/1623_ivt'
+    path = '/data/nanopore/rRNA/1623_native-multi/multifast5'
+    pathout = '/data/nanopore/nanoDoc2/1623_native'
     ref = "/data/nanopore/reference/NC000913.fa"
     #fmercurrent = "/data/nanopore/signalStatRNA180.txt"
 
 
 
-    MAX_CORE = 24
+    MAX_CORE = 18
     qvaluethres = 5
     h5tosegmantedPq(path,pathout,ref,MAX_CORE,qvaluethres)

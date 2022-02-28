@@ -75,9 +75,11 @@ if __name__ == "__main__":
     #gm = GraphManager(pathout)
     datab =[]
     #depth = fr.getRowData("cc6m_2244_t7_ecorv", True, 2000)
-    pos = 2022
-    #rseq = a.seq("cc6m_2244_t7_ecorv",start=pos-3,end=pos+5+3)
-    #print(rseq)
+    pos = 2055
+    a = mp.Aligner(ref)
+    rseq = a.seq("cc6m_2244_t7_ecorv",start=pos,end=pos+5)
+    print(rseq)
+
 
     traces,takecnt = fr.getRowData("cc6m_2244_t7_ecorv", True, pos, takecnt=100)
     plotGraph(traces)

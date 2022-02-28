@@ -90,9 +90,9 @@ def binned(trimtrace, traceItv,trimUnitLength,rseq):
     #analizeIdx
     idx = analyzeIdxShift(subtraces,rseq)
     nret = None
-    if len(subtraces) > 0:
-        for m in range(idx,min(idx+5,len(subtraces))):
+    for m in range(idx,min(idx+5,len(subtraces))):
 
+        if m>=0 and m < len(subtraces):
             subtrace = subtraces[m]
             bineach = binnedEach(subtrace, trimUnitLength)
             #print("bineach",bineach)
@@ -345,6 +345,11 @@ class PqReader:
 
     def getRowData(self, chr, strand, pos,takecnt=-1):
 
+        if strand == "+":
+            strand = True
+        if strand == "-":
+            strand = False
+
         if pos - SEQ_TAKE_MARGIN < 0:
             return None
         ADDITONAL_MARGIN = 3
@@ -414,14 +419,14 @@ class PqReader:
 
         #tp = (strand,start,end,cigar,pos,traceintervalLen)
 
-        rel0 = pos - _start - SEQ_TAKE_MARGIN
+        rel0 = pos - _start - SEQ_TAKE_MARGIN +1
         rel = self.correctCigar(rel0,cigar)
         start = rel
         if start < 2:
             # do not use lower end
             return None
 
-        rel = pos - _start + 6 + SEQ_TAKE_MARGIN
+        rel = pos - _start + 6 + SEQ_TAKE_MARGIN +1
         end = self.correctCigar(rel, cigar)
         if end >= traceintervalLen:
             end = traceintervalLen-1

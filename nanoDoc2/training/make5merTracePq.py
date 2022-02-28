@@ -162,7 +162,7 @@ if __name__ == "__main__":
     ref1 = "/data/nanopore/reference/Curlcake.fa"
     ref2 = "/data/nanopore/reference/Cov2_Korea.fa"
 
-    path_w = "/data/nanopore/nanoDoc2/5000traceeach.pq"
+    path_w = "/data/nanopore/nanoDoc2/5000traceeachFix.pq"
     refs= [ref1,ref2]
     pq1 = "/data/nanopore/nanoDoc2/testCurlcakeIVT"
     pq2 = "/data/nanopore/nanoDoc2/testSARSCOV2"
