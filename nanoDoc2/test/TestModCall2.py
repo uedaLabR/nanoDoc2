@@ -6,13 +6,16 @@ ref ="/data/nanopore/reference/NC000913.fa"
 refpq = '/data/nanopore/nanoDoc2/1623_ivt'
 targetpq = '/data/nanopore/nanoDoc2/1623_native'
 #out = "/data/nanopore/rRNA/16S_test.txt"
-out = "/data/nanopore/nanoDoc2/23S_testkmean6.txt"
+out = "/data/nanopore/nanoDoc2/23S_test_mean.txt"
 chrom = "NC_000913.3"
 chromtgt = "NC_000913.3"
 # start = 4035531
 # end = start+1541
 start = 4037519
 end = 4040423
+
+# start = 4039460
+# end = 4039480
 
 # start = 4037519 + 1600
 # end = 4037519 + 1650

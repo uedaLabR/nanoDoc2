@@ -203,26 +203,28 @@ def getScoreFromCluster(xref, xrow, niter):
     for m in range(k):
         countref = np.count_nonzero(Iref == m)
         countrow = np.count_nonzero(Irow == m)
-        print("ountref,countrow", countref, countrow)
+        #print("ountref,countrow", countref, countrow)
         if countref > 0 and countrow > 0:
 
             tc = (countref + countrow) // 2
             df = pd.DataFrame([[tc, tc], [countref, countrow]])
             chi2, p, dof, expected = chi2_contingency(df, correction=False)
-            score = 0
 
+            score = 0
             if abs(1-p) < 0.00001:
                 score = 0
             elif p > 0:
                 score = -1 * math.log(p)
 
+            # print(p, score)
             if score > maxscore:
                 maxscore = score
 
-    if score > scorenormalizefactor:
-        score = scorenormalizefactor
-    score = score / scorenormalizefactor
-    return score
+    if maxscore > scorenormalizefactor:
+        maxscore = scorenormalizefactor
+
+    maxscore = maxscore / scorenormalizefactor
+    return maxscore
 
 
 def eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr, model_t, fw,
@@ -262,7 +264,7 @@ def eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile,
     #
     #
     #k = 3
-    niter = 25
+    niter = 20
     xref = model_t.predict(refdata)
     xrow = model_t.predict(rowdata)
 
