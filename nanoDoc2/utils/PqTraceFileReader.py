@@ -168,7 +168,7 @@ import mappy as mp
 
 class PqReader:
 
-    def __init__(self, path,ref,maxreads = 2000):
+    def __init__(self, path,ref,maxreads = 3000):
 
         self.path = path
         self.batch = None
@@ -232,7 +232,6 @@ class PqReader:
         return depth
 
 
-
     def randomsample(self, pos, data, ntake, indexes):
 
         if indexes is None:
@@ -291,8 +290,8 @@ class PqReader:
 
             fileidx = row['fileidx']
             filepath = sortedfile[fileidx]
-
             if indexdata is None:
+
                 indexdata = pq.read_table(filepath, columns=['read_no', 'chr', 'strand', 'start', 'end']).to_pandas()
                 indexdata['fileidx'] = fileidx
 
@@ -358,6 +357,7 @@ class PqReader:
 
         if ((self.bufferData is None) or (chr != self.loadchr) or ((pos % binsize) == 0)):
             #print("loading row files",self.bufferData is None, chr != self.loadchr , (pos % binsize) == 0)
+            print("load data init")
             self.load(chr, pos, strand)
 
         traces,sampledlen = self.getFormattedData(strand, pos,rseq,takecnt)
@@ -368,8 +368,9 @@ class PqReader:
 
         if sampledlen < takecnt and takecnt > 0:
             depth = self.getDepth(chr, pos, strand)
-            if depth > takecnt:
+            if depth > sampledlen:
                 #load and sample again since not enough sampling for this region
+                print("load data",depth,sampledlen)
                 self.load(chr, pos, strand)
                 traces,sampledlen = self.getFormattedData(strand, pos,rseq, takecnt)
 
@@ -429,7 +430,8 @@ class PqReader:
         rel = pos - _start + 6 + SEQ_TAKE_MARGIN +1
         end = self.correctCigar(rel, cigar)
         if end >= traceintervalLen:
-            end = traceintervalLen-1
+            #end = traceintervalLen-1
+            return None
         if start == end:
             return None
 

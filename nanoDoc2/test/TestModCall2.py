@@ -1,4 +1,4 @@
-from nanoDoc2.analysis import comparisonAnalyses
+from nanoDoc2.analysis import  comparisonAnalysisKmean
 
 wfile = "/data/nanopore/IVT_Trace/weight/docweight"
 paramf = "/data/param20.txt"
@@ -6,13 +6,12 @@ ref ="/data/nanopore/reference/NC000913.fa"
 refpq = '/data/nanopore/nanoDoc2/1623_ivt'
 targetpq = '/data/nanopore/nanoDoc2/1623_native'
 #out = "/data/nanopore/rRNA/16S_test.txt"
-out = "/data/nanopore/nanoDoc2/23S_test2.txt"
+out = "/data/nanopore/nanoDoc2/23S_testkmean6.txt"
 chrom = "NC_000913.3"
 chromtgt = "NC_000913.3"
 # start = 4035531
 # end = start+1541
 start = 4037519
-start = 4040160
 end = 4040423
 
 # start = 4037519 + 1600
@@ -31,7 +30,8 @@ with tf.device('/GPU:1'):
     os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
     os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
 
-    comparisonAnalyses.modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, end, strand, minreadlen,uplimit = 1000)
+    comparisonAnalysisKmean.modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, end, strand, minreadlen,uplimit = 1000)
+
 # out = "/data/nanopore/rRNA/23S_500.txt"
 # nanoDoc2AnalysisOneSide.modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, end, strand, minreadlen,uplimit = 500)
 # out = "/data/nanopore/rRNA/23S_250.txt"

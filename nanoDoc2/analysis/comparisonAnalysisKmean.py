@@ -134,9 +134,97 @@ def lof(data):
 
     return score
 
+
 import os.path
 import matplotlib.pyplot as plt
 import nanoDoc2.utils.nanoDocUtils as nanoDocUtils
+from scipy.stats import chi2_contingency
+import pandas as pd
+import math
+
+
+def getScoreFromDistanceComparison(xref, xrow, res):
+
+    xref1, xref2 = train_test_split(xref, test_size=(len(xref) // 2))
+    xrow1, xrow2 = train_test_split(xrow, test_size=(len(xrow) // 2))
+
+    dist = getDistOneside(xref1, xrow1, res)
+    dist2 = getDistOneside(xref2, xrow1, res)
+    dist_self = getDistOneside(xrow2, xrow1, res)
+
+    ratio = dist/ dist_self
+    ratio2 = dist2 / dist_self
+
+    thres = 1.8
+    #threslow = 1 / thres
+    cnt = len(xref1)
+
+    hiValueIndex = np.where(ratio > thres)[0]
+    hiValueIndex2 = np.where(ratio2 > thres)[0]
+
+    #lowValueIndex = np.where(ratio < threslow)[0]
+    #lowValueIndex2 = np.where(ratio2 < threslow)[0]
+
+    hivIdx = np.intersect1d(hiValueIndex, hiValueIndex2)
+    #lowIdx = np.intersect1d(lowValueIndex, lowValueIndex2)
+
+    score = len(hivIdx) / cnt
+
+    #print(hiValueIndex, cnt, score)
+
+    if cnt < 30:
+        score = 0
+    if score < 0:
+        score = 0
+
+    return score
+
+
+def getScoreFromCluster(xref, xrow, niter):
+
+    x = np.concatenate([xref, xrow])
+    print(x.shape)
+    nn, d = x.shape
+    mindatasizeFor3centroid = 120
+    scorenormalizefactor = 270
+
+    k = 3 # k=3 for clustering one for unmod, one for mod, other
+    if nn < mindatasizeFor3centroid: #if data size < 120 to small to 3 centroids
+        k = 2
+
+    kmeans = faiss.Kmeans(d=d, k=k, niter=niter)
+    kmeans.train(x)
+    # index = faiss.IndexFlatL2(16)
+    D, I = kmeans.index.search(x, 1)
+    Iref, Irow = np.split(I, 2)
+
+
+    maxscore = 0
+    for m in range(k):
+        countref = np.count_nonzero(Iref == m)
+        countrow = np.count_nonzero(Irow == m)
+        print("ountref,countrow", countref, countrow)
+        if countref > 0 and countrow > 0:
+
+            tc = (countref + countrow) // 2
+            df = pd.DataFrame([[tc, tc], [countref, countrow]])
+            chi2, p, dof, expected = chi2_contingency(df, correction=False)
+            score = 0
+
+            if abs(1-p) < 0.00001:
+                score = 0
+            elif p > 0:
+                score = -1 * math.log(p)
+
+            if score > maxscore:
+                maxscore = score
+
+    if score > scorenormalizefactor:
+        score = scorenormalizefactor
+    score = score / scorenormalizefactor
+    return score
+
+
 def eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr, model_t, fw,
                 chrom,
                 chromtgt,res):
@@ -145,7 +233,7 @@ def eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile,
     if not os.path.isfile(weight_path):
         #     no 6mer found
         print(weight_path)
-        infos = "{0}\t{1}\t{2}\t{3}\t{4}\t{5}".format(n, str(subs), 0, 0, 0, 0)
+        infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n, str(subs), 0, 0, 0, 0)
         print(infos)
         fw.writelines(infos + "\n")
         fw.flush()
@@ -154,62 +242,37 @@ def eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile,
     # target signal
     rawdatas, cnt = targetpr.getRowData(chromtgt, strand, n, uplimit)
     # reference signal
-    refdatas, cntref = refpr.getRowData(chrom, strand, n, cnt * 3)
+    refdatas, cntref = refpr.getRowData(chrom, strand, n, cnt)
 
     #    reference start or end, or nodepth
-    if (cnt < 10 or cntref < 10 or (rawdatas is None) or (refdatas is None)):
-        infos = "{0}\t{1}\t{2}\t{3}\t{4}\t{5}".format(n, str(subs), cnt, cnt, 0, 0)
+    if (cnt < 5 or cntref < 5 or (rawdatas is None) or (refdatas is None)):
+        infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n, str(subs), cnt, cnt,  0)
         print(infos)
         fw.writelines(infos + "\n")
         fw.flush()
         return (cnt, cntref)
 
     model_t.load_weights(weight_path)
-    rawdatas, cnt = nanoDocUtils.reducesize(rawdatas, cntref // 2)  # raw data have at least half size as reference data
+    if cntref < cnt:
+        rawdatas, cnt = nanoDocUtils.reducesize(rawdatas, cntref)  # raw data have the same size as reference data
 
-    refdata1, refdata2 = train_test_split(refdatas, test_size=(cntref // 3))
-    refdata1, refdata3 = train_test_split(refdata1, test_size=(cntref // 3))
-    #ref for stat comparison
-    refdata1 = getFormat(refdata1)
-    refdata2 = getFormat(refdata2)
-    refdata3 = getFormat(refdata3)
 
+    refdata = getFormat(refdatas)
     rowdata = getFormat(rawdatas)
-
-    xref = model_t.predict(refdata1)
-    xref2 = model_t.predict(refdata2)
-    xref3 = model_t.predict(refdata3)
+    #
+    #
+    #k = 3
+    niter = 25
+    xref = model_t.predict(refdata)
     xrow = model_t.predict(rowdata)
 
-    dist = getDistOneside(xrow, xref, res)
-    distref = getDistOneside(xref2, xref, res)
-    distref2 = getDistOneside(xref3, xref, res)
-    ratioraf = distref2/distref
-
-    querythres = np.percentile(ratioraf, 95)
-    hiQueryValueIndex = np.where(ratioraf > querythres)
-
-    ratio = dist/distref
-    thres = np.percentile(ratioraf, 99.5)
-    thres_low = 2.1
-    if thres < thres_low:
-        thres = thres_low
-
-    hiValueIndex = np.where(ratio > thres)
-    diffset = np.setdiff1d(hiValueIndex,hiQueryValueIndex)
-    # countmod = np.count_nonzero(ratio > thres)
-
-    score = len(diffset) / (cnt * 0.95)
-    lofInSet = lof(xrow[diffset])
-
-    if cnt < 30:
-        score = 0
-    if score < 0:
-        score = 0
-
+    score = getScoreFromCluster(xref, xrow, niter)
     scoreDisplay = '{:.7f}'.format(score)
-    infos = "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}".format(n, str(subs), cnt, cntref,thres,scoreDisplay,lofInSet)
 
+    # score2  = getScoreFromDistanceComparison(xref, xrow, res)
+    # scoreDisplay2 = '{:.7f}'.format(score2)
+
+    infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n, str(subs), cnt, cntref,scoreDisplay)
     print(infos)
     fw.writelines(infos + "\n")
     fw.flush()

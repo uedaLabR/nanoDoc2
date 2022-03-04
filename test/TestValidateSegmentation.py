@@ -133,6 +133,26 @@ def withinRange(onerecord,lenlimit):
     seq = fastq[1]
     return len(seq) <= lenlimit
 
+def ciglen(cigar):
+
+    a = pysam.AlignedSegment()
+    a.cigarstring = cigar
+    refpos = 0
+    relpos = 0
+    for cigaroprator, cigarlen in a.cigar:
+
+        if cigaroprator == 0:  # match
+
+
+            relpos = relpos + cigarlen
+            refpos = refpos + cigarlen
+
+        elif cigaroprator == 2:  # Del
+            refpos = refpos + cigarlen
+        elif cigaroprator == 1 or cigaroprator == 3:  # Ins or N
+            relpos = relpos + cigarlen
+
+    return refpos
 
 import mappy
 def alginandremap(onerecord, aligner):
@@ -164,7 +184,9 @@ def alginandremap(onerecord, aligner):
     lgenome = mappy.revcomp(lgenome)
     seq, cigar, left, traceboundary,frombasecaller_idx,possiblemove_idx = ViterbiSegmantation.flipplopViterbiEach(lgenome,chrom,strand,r_st,r_en,q_st,q_en,trace,move)
 
-
+    print("information")
+    print(r_st,r_en)
+    print(r_st, r_st + ciglen(cigar))
     mapped_start = r_st
     mapped_end = r_en
     clipped_bases_start = 0
@@ -183,8 +205,8 @@ from matplotlib import gridspec
 import numba
 
 import pysam
-@numba.jit(nopython=True)
 def getrelpos(cigar,pos):
+
     a = pysam.AlignedSegment()
     a.cigarstring = cigar
     refpos = 0
@@ -588,6 +610,9 @@ if __name__ == "__main__":
 
    print(len(seq), seq.replace('U', 'T'))
    print(len(signal),raw_start, viterbistart)
+   print("information")
+   print(r_st, r_en)
+   print(r_st, r_st + ciglen(cigar))
    signal_t = signal
    signal_v = signal[viterbistart:]
    signal_t = signal_t[::-1]  # reverse for rna
