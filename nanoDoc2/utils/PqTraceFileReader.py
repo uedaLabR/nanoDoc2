@@ -21,7 +21,7 @@ from numba import jit,u1,i8,f8
 
 DATA_LENGTH_UNIT = 8
 SEQ_TAKE_MARGIN = 3
-binsize = 1000
+binsize = 2000
 takemargin = 10
 
 from scipy import ndimage as ndi
@@ -168,8 +168,9 @@ import mappy as mp
 
 class PqReader:
 
-    def __init__(self, path,ref,maxreads = 3000):
+    def __init__(self, path,ref,maxreads = 1000,IndelStrict = False):
 
+        self.IndelStrict = IndelStrict
         self.path = path
         self.batch = None
         print("ref",ref)
@@ -279,7 +280,7 @@ class PqReader:
         print("loding data")
         self.loadchr = chr
         #extract parquet file contain reads in this region
-        query = 'start <= ' + str(pos) + ' & end >= ' + str(pos) + ' & chr == "' + chr + '" & strand == ' + str(
+        query = 'start <= ' + str(pos-takemargin) + ' & end >= ' + str(pos+takemargin) + ' & chr == "' + chr + '" & strand == ' + str(
             strand) + ''
         pqfiles = self.indexdf.query(query)
         #
@@ -311,6 +312,14 @@ class PqReader:
         ntake = self.maxreads
 
         # get readid to reads for bin interval batch
+        # need to buffer from equally from interval
+        # middle = (start+end) // 2
+        # l = list(range(start+1,middle))
+        # l2 = list(range(middle,end-1))
+        # ll = [middle,end,start]
+        # ll.extend(l)
+        # ll.extend(l2)
+
         for pos2 in range(start,end):
 
             addIndex = self.randomsample(pos2, indexdata, ntake, readsIndex)
@@ -358,6 +367,7 @@ class PqReader:
         if ((self.bufferData is None) or (chr != self.loadchr) or ((pos % binsize) == 0)):
             #print("loading row files",self.bufferData is None, chr != self.loadchr , (pos % binsize) == 0)
             print("load data init")
+            self.bufferData = None
             self.load(chr, pos, strand)
 
         traces,sampledlen = self.getFormattedData(strand, pos,rseq,takecnt)
@@ -368,7 +378,7 @@ class PqReader:
 
         if sampledlen < takecnt and takecnt > 0:
             depth = self.getDepth(chr, pos, strand)
-            if depth > sampledlen:
+            if depth > sampledlen + 30:
                 #load and sample again since not enough sampling for this region
                 print("load data",depth,sampledlen)
                 self.load(chr, pos, strand)
@@ -386,7 +396,8 @@ class PqReader:
 
     def getRowSequence(self, chr, strand, pos,takecnt=-1):
 
-        if ((self.bufferData is None) or (chr != self.loadchr) or ((pos % binsize) == 0)):
+        binsizehalf = binsize //2
+        if ((self.bufferData is None) or (chr != self.loadchr) or ((pos % binsizehalf) == 0)):
             #print("loading row files",self.bufferData is None, chr != self.loadchr , (pos % binsize) == 0)
             self.load(chr, pos, strand)
 
@@ -432,8 +443,11 @@ class PqReader:
         if end >= traceintervalLen:
             #end = traceintervalLen-1
             return None
-        if start == end:
-            return None
+        if self.IndelStrict:
+            expectedlen = 6 + (SEQ_TAKE_MARGIN*2)
+            if abs((end-start) - expectedlen) > 0: # Do not use cross Indel
+                #print((end-start))
+                return None
 
         # print(tp)
         #print("start end",cigar,pos,_start,rel0,start,end)
@@ -489,7 +503,6 @@ class PqReader:
     def getFormattedData(self, strand, pos,rseq,_takecnt):
 
         traces = []
-
         takecnt = 0
         for index, row in self.bufferData.iterrows():
 

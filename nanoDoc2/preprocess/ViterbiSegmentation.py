@@ -211,7 +211,7 @@ LOW_THRES_FOR_DEFULT_TRANS_PROP = 0.8
 BONUS_FOR_EACH_SEGMENT = 0.1
 count = 0
 
-bannedinterval = 120
+bannedinterval = 150
 
 
 @numba.jit(nopython=True)

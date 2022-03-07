@@ -6,15 +6,13 @@ ref ="/data/nanopore/reference/NC000913.fa"
 refpq = '/data/nanopore/nanoDoc2/1623_ivt'
 targetpq = '/data/nanopore/nanoDoc2/1623_native'
 #out = "/data/nanopore/rRNA/16S_test.txt"
-out = "/data/nanopore/nanoDoc2/23S_test_mean.txt"
+out = "/data/nanopore/nanoDoc2/16S_test_mean.txt"
 chrom = "NC_000913.3"
 chromtgt = "NC_000913.3"
 # start = 4035531
 # end = start+1541
-# start = 4037519 + 1618 -5
-# end = 4037519 + 1618 +10
-start = 4037519
-end = 4040423
+start = 4035531
+end = 4037065
 
 # start = 4039000
 # end = 4039020
@@ -26,14 +24,14 @@ end = 4040423
 # end = 4037519+2200
 
 strand = True
-minreadlen = 200
+minreadlen = 100
 #out = "/data/nanopore/rRNA/23S_1000_test7.txt
 import os
 import tensorflow as tf
-with tf.device('/CPU:1'):
+with tf.device('/GPU:0'):
 
-    # os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
-    # os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
+    os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
+    os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
 
     comparisonAnalysisKmean.modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, end, strand, minreadlen,uplimit = 1000)
 

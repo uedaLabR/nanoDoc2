@@ -186,7 +186,7 @@ def getScoreFromCluster(xref, xrow, niter):
     print(x.shape)
     nn, d = x.shape
     mindatasizeFor3centroid = 120
-    scorenormalizefactor = 270
+    scorenormalizefactor = 130
 
     k = 3 # k=3 for clustering one for unmod, one for mod, other
     if nn < mindatasizeFor3centroid: #if data size < 120 to small to 3 centroids
@@ -203,7 +203,7 @@ def getScoreFromCluster(xref, xrow, niter):
     for m in range(k):
         countref = np.count_nonzero(Iref == m)
         countrow = np.count_nonzero(Irow == m)
-        #print("ountref,countrow", countref, countrow)
+
         if countref > 0 and countrow > 0:
 
             tc = (countref + countrow) // 2
@@ -214,16 +214,16 @@ def getScoreFromCluster(xref, xrow, niter):
             if abs(1-p) < 0.00001:
                 score = 0
             elif p > 0:
-                score = -1 * math.log(p)
-
+                score = -1 * math.log10(p) / scorenormalizefactor
+            print("ountref,countrow", countref, countrow,score)
             # print(p, score)
             if score > maxscore:
                 maxscore = score
 
-    if maxscore > scorenormalizefactor:
-        maxscore = scorenormalizefactor
+    if maxscore > 1:
+        maxscore = 1
 
-    maxscore = maxscore / scorenormalizefactor
+    maxscore = maxscore
     return maxscore
 
 
@@ -275,6 +275,7 @@ def eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile,
     # scoreDisplay2 = '{:.7f}'.format(score2)
 
     infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n, str(subs), cnt, cntref,scoreDisplay)
+    print(n-4037519)
     print(infos)
     fw.writelines(infos + "\n")
     fw.flush()
@@ -294,8 +295,8 @@ def modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, en
 
     coeffA, coeffB, uplimitb, takeparcentile = nanoDocUtils.readParam(paramf)
 
-    refpr = PqReader(refpq, ref)
-    targetpr = PqReader(targetpq,ref)
+    refpr = PqReader(refpq, ref,IndelStrict=True) # Assume
+    targetpr = PqReader(targetpq,ref,IndelStrict=True)
     model_t = getModel()
 
     fw = open(out, mode='w')

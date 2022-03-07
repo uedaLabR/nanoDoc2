@@ -40,7 +40,7 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
     cnt = 0
     for ref in refs:
         records = SeqIO.parse(ref, 'fasta')
-        fr = PqReader(pqs[cnt], ref,4000)
+        fr = PqReader(pqs[cnt], ref,4000,IndelStrict=True)
 
         for record in records:
            print(record.name)
