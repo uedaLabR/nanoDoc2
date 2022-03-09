@@ -12,7 +12,8 @@ chromtgt = "NC_000913.3"
 # start = 4035531
 # end = start+1541
 start = 4035531
-end = 4037065
+end = 4037072
+
 
 # start = 4039000
 # end = 4039020
@@ -28,7 +29,7 @@ minreadlen = 100
 #out = "/data/nanopore/rRNA/23S_1000_test7.txt
 import os
 import tensorflow as tf
-with tf.device('/GPU:0'):
+with tf.device('/CPU:0'):
 
     os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
     os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"

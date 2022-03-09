@@ -168,6 +168,25 @@ import mappy as mp
 
 class PqReader:
 
+    def getFilePathList(self,path):
+
+        sortedfile = sorted(glob.glob(path + "/*.pq"))
+        # print(sortedfile)
+        pluslist = []
+        minuslist = []
+        for f in sortedfile:
+            if "_-1_" in f:
+                minuslist.append(f)
+            else:
+                pluslist.append(f)
+        pluslist.sort(key=lambda x: int(x.split('_')[-1].replace(".pq", "")))
+        minuslist.sort(key=lambda x: int(x.split('_')[-1].replace(".pq", "")))
+        sortedfile = pluslist
+        sortedfile.extend(minuslist)
+        return sortedfile
+
+
+
     def __init__(self, path,ref,maxreads = 1000,IndelStrict = False):
 
         self.IndelStrict = IndelStrict
@@ -179,10 +198,12 @@ class PqReader:
         self.maxreads_org = maxreads
         self.bufferData = None
         self.loadchr = None
-        sortedfile = sorted(glob.glob(path+"/*.pq"))
+
         #make index from parquet meta data
         indexlist = []
         fileidx = 0
+        sortedfile = self.getFilePathList(path)
+
         for file in sortedfile:
 
             # ('read_id', string()),
@@ -214,7 +235,7 @@ class PqReader:
         query = 'start <= ' + str(pos-takemargin) + ' & end >= ' + str(pos+takemargin) + ' & chr == "' + chr + '" & strand == ' + str(
             strand) + ''
         pqfiles = self.indexdf.query(query)
-        sortedfile = sorted(glob.glob(self.path + "/*.pq"))
+        sortedfile = self.getFilePathList(self.path)
         indexdata = None
         for index, row in pqfiles.iterrows():
 
@@ -284,7 +305,8 @@ class PqReader:
             strand) + ''
         pqfiles = self.indexdf.query(query)
         #
-        sortedfile = sorted(glob.glob(self.path + "/*.pq"))
+        sortedfile = self.getFilePathList(self.path)
+        print(sortedfile)
         #
         indexdata = None
         for index, row in pqfiles.iterrows():
@@ -465,9 +487,10 @@ class PqReader:
         # print(traceintervals)
         if relativeEnd >= len(traceintervals) or relativeStart >= len(traceintervals):
             return None
-        tracestart = traceintervals[relativeStart]
-        traceend = traceintervals[relativeEnd]
-        #print("sig_start,sig_end",traceintervals[relativeStart],traceintervals[relativeEnd],sig_start,sig_end)
+        #tracestart = traceintervals[relativeStart]
+        #traceend = traceintervals[relativeEnd]
+        #print(traceintervals)
+        #print("sig_start,sig_end",traceintervals[relativeStart],traceintervals[relativeEnd])
         return traceintervals[relativeStart:relativeEnd]
 
 
@@ -481,6 +504,7 @@ class PqReader:
         traceintervals = row['traceintervals']
         trace = row['trace']
         #
+        #print(traceintervals)
         sted = self.calcStartEnd(strand,start,end,cigar,pos,offset,traceintervals)
         if sted is None:
             return None
