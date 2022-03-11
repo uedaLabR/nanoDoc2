@@ -188,9 +188,26 @@ def normalizeSignal(read,traceboundary,fmerDict):
         print("normalize by window failed with " + read.read_id +" len="+str(len(read.sequence))+" , probably too short,sequence is normized as a whole")
         data = normalizeSignal_as_whole(read,traceboundary,fmerDict)
 
-    if data is not None:
-        data = downsampleAndFormat(data)
+    # if data is not None:
+    #     data = downsampleAndFormat(data)
+    data = format(data)
     return  data
+
+def format(signal):
+
+    low_limit = 40
+    high_limit = 160
+
+
+    signal = np.clip(signal, low_limit, high_limit)
+    signal = ((signal-low_limit) / (high_limit-low_limit)) * 255
+    signal = np.around(signal.astype(np.float), 0)
+
+    signal = np.clip(signal, 0, 255)
+    signal = signal.astype(np.uint8)
+
+    return signal
+
 
 def downsampleAndFormat(signal):
 

@@ -95,7 +95,6 @@ def toBamRecord(reflist,row):
     if a.query_sequence is None or len(a.query_sequence) != cigarseqlen:
         print(row.cigar)
         print(a.query_sequence)
-        print(len(a.query_sequence),cigarseqlen)
         return None
 
     return a

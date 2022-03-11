@@ -2,7 +2,7 @@ import nanoDoc2.preprocess.ViterbiSegmentation  as vs
 import nanoDoc2.preprocess.SignalNormalization as ss
 
 
-def preprocess(read):
+def preprocess(read,fmerDict):
 
     #Viterbi segmentation
     lgenome = read.refgenome
@@ -30,5 +30,6 @@ def preprocess(read):
 
     read.cigar_str = cigar
     read.settraceboundary(traceboundary)
+    read.normSignal = ss.normalizeSignal(read, traceboundary, fmerDict)
     return read
 

@@ -17,7 +17,8 @@ def writeToPqWithIdx(df,output_file):
             ('fastq', string()),
             ('offset', uint16()),
             ('traceintervals', list_(uint16())),
-            ('trace', list_(uint8()))
+            ('trace', list_(uint8())),
+            ('signal', list_(uint8()))
         ]
     )
 
@@ -44,7 +45,8 @@ def writeToPq(df,output_file):
             ('fastq', string()),
             ('offset', uint16()),
             ('traceintervals', list_(uint16())),
-            ('trace', list_(uint8()))
+            ('trace', list_(uint8())),
+            ('signal', list_(uint8()))
         ]
     )
 

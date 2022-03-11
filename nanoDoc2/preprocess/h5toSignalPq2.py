@@ -27,7 +27,7 @@ def get_fast5_files_in_dir(directory:str):
     return list(sorted(glob.glob(directory + '/*.fast5',recursive=True)))
 
 import os
-def preprocess(f5file,pathout,ref,ncore,qvaluethres):
+def preprocess(f5file,pathout,ref,ncore,qvaluethres,fmercurrent):
 
     reads = []
     ret = []
@@ -73,7 +73,8 @@ def preprocess(f5file,pathout,ref,ncore,qvaluethres):
                 print('Key Error')
 
 
-    preprocess = partial(PreprocessTrace.preprocess)
+    fmerdict = nutils.getCurrentDict(fmercurrent)
+    preprocess = partial(PreprocessTrace.preprocess,fmerDict=fmerdict)
     print("finish mapping to the reference")
     with Pool(ncore) as p:
         #Viterbi Segmentation/Normalize/
@@ -84,7 +85,6 @@ def preprocess(f5file,pathout,ref,ncore,qvaluethres):
     filename = os.path.splitext(filename)[0]
     wf.writeToFile(pathout,ncore,ret,filename)
     #
-    #mergeParquet(pathout,ncore)
 
     print("finish segmentation and output file")
 
@@ -109,7 +109,7 @@ def _mergeParquet(dirinfo):
 
 
     df = pd.DataFrame(data,
-                      columns=['read_id','chr', 'strand', 'start', 'end', 'cigar','genome','fastq','offset','traceintervals', 'trace'])
+                      columns=['read_id','chr', 'strand', 'start', 'end', 'cigar','genome','fastq','offset','traceintervals', 'trace','signal'])
 
     df_s = df.sort_values('start')
     df_s = df_s.reset_index()
@@ -138,7 +138,7 @@ def mergeParquet(pathout,ncore):
         p.map(_mergeParquet,dirlistTohandle)
 
 
-def h5tosegmantedPq(path,pathout,ref,MAX_CORE,qvaluethres):
+def h5tosegmantedPq(path,pathout,ref,MAX_CORE,qvaluethres,fmercurrent):
 
     f5list = get_fast5_files_in_dir(path)
     ncore = get_number_of_core(MAX_CORE=MAX_CORE)
@@ -146,7 +146,7 @@ def h5tosegmantedPq(path,pathout,ref,MAX_CORE,qvaluethres):
     for f5file in f5list:
 
         print(cnt,f5file)
-        preprocess(f5file,pathout,ref,ncore,qvaluethres)
+        preprocess(f5file,pathout,ref,ncore,qvaluethres,fmercurrent)
         cnt += 1
 
     #marge Parquet
@@ -158,17 +158,17 @@ def h5tosegmantedPq(path,pathout,ref,MAX_CORE,qvaluethres):
 
 if __name__ == "__main__":
 
-    path = '/data/nanopore/IVT/m6aIVT/multifast5/'
-    pathout = '/data/nanopore/nanoDoc2/testCurlcakeIVT'
-    ref = "/data/nanopore/reference/Curlcake.fa"
+    # path = '/data/nanopore/IVT/m6aIVT/multifast5/'
+    # pathout = '/data/nanopore/nanoDoc2/testCurlcakeIVT'
+    # ref = "/data/nanopore/reference/Curlcake.fa"
 
-    # path = '/data/nanopore/rRNA/1623_ivt-multi/multifast5/'
-    # pathout = '/data/nanopore/nanoDoc2/1623_ivt'
-    # ref = "/data/nanopore/reference/NC000913.fa"
+    path = '/data/nanopore/IVT/koreaIVT/multifast5/'
+    pathout = '/data/nanopore/nanoDoc2/testSARSCOV2'
+    ref = "/data/nanopore/reference/Cov2_Korea.fa"
     fmercurrent = "/data/nanopore/signalStatRNA180.txt"
 
 
 
     MAX_CORE = 24
     qvaluethres = 5
-    h5tosegmantedPq(path,pathout,ref,MAX_CORE,qvaluethres)
+    h5tosegmantedPq(path,pathout,ref,MAX_CORE,qvaluethres,fmercurrent)
