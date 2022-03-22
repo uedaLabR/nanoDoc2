@@ -9,10 +9,10 @@ import multiprocessing
 from multiprocessing import Pool
 from functools import partial
 
-from nanoDoc2.preprocess import Preprocess, PreprocessTrace
-from nanoDoc2.utils import FileIO
+from nanoDoc2_1.preprocess import Preprocess
+from nanoDoc2_1.utils import FileIO
 from nanoDoc2.utils.nanoDocRead import nanoDocRead
-import nanoDoc2.preprocess.WriteToFile as wf
+import nanoDoc2_1.preprocess.WriteToFile as wf
 import pyarrow.parquet as pq
 from nanoDoc2.utils import nanoDocUtils as nutils
 
@@ -74,7 +74,7 @@ def preprocess(f5file,pathout,ref,ncore,qvaluethres,fmercurrent):
 
 
     fmerdict = nutils.getCurrentDict(fmercurrent)
-    preprocess = partial(PreprocessTrace.preprocess,fmerDict=fmerdict)
+    preprocess = partial(Preprocess.preprocess,fmerDict=fmerdict)
     print("finish mapping to the reference")
     with Pool(ncore) as p:
         #Viterbi Segmentation/Normalize/
@@ -156,22 +156,3 @@ def h5tosegmantedPq(path,pathout,ref,MAX_CORE,qvaluethres,fmercurrent):
 
 
 
-if __name__ == "__main__":
-
-    # path = '/data/nanopore/IVT/m6aIVT/multifast5/'
-    # pathout = '/data/nanopore/nanoDoc2/testCurlcakeIVT'
-    # ref = "/data/nanopore/reference/Curlcake.fa"
-
-    path = '/data/nanopore/IVT/koreaIVT/multifast5_2/workspace'
-    pathout = '/data/nanopore/nanoDoc2/testSARSCOV2'
-    ref = "/data/nanopore/reference/Cov2_Korea.fa"
-    fmercurrent = "/data/nanopore/signalStatRNA180.txt"
-
-    path = '/data/nanopore/rRNA/1623_native-multi/multifast5_2/workspace'
-    pathout = '/data/nanopore/nanoDoc2/1623_native'
-    ref = "/data/nanopore/reference/NC000913.fa"
-    fmercurrent = "/data/nanopore/signalStatRNA180.txt"
-
-    MAX_CORE = 24
-    qvaluethres = 5
-    h5tosegmantedPq(path,pathout,ref,MAX_CORE,qvaluethres,fmercurrent)

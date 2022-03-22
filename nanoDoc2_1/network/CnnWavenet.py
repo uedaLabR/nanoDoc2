@@ -80,81 +80,25 @@ def WaveNetResidualConv1D(num_filters, kernel_size, stacked_layer):
 
 def build_network(shape, num_classes,do_r = 0.2):
 
-    def ljuxt(*fs):
-        return rcompose(juxt(*fs), list)
-
-    def conv1D(filters, kernel_size):
-        return Conv1D(filters, kernel_size, padding='same', kernel_initializer='he_normal',
-                      kernel_regularizer=l2(0.0001))
 
     def conv1D_halve(filters, kernel_size):
         return Conv1D(filters, kernel_size, padding='same', strides=2, kernel_initializer='he_normal',
                       kernel_regularizer=l2(0.0001))
 
-    def dense(units, activation):
-        return Dense(units, activation=activation, kernel_regularizer=l2(0.0001))
 
-        # Define SqueezeNet.
 
-    def fire_module(filters_squeeze, filters_expand):
-        return rcompose(BatchNormalization(),
-                        Activation('mish'),
-                        conv1D(filters_squeeze, 1),
-                        BatchNormalization(),
-                        Activation('mish'),
-                        ljuxt(conv1D(filters_expand // 2, 1),
-                              conv1D(filters_expand // 2, 3)),
-                        Concatenate())
-
-    def fire_module_with_shortcut(filters_squeeze, filters_expand):
-        return rcompose(ljuxt(fire_module(filters_squeeze, filters_expand),
-                              identity),
-                        Add())
-
-        # InceptionModule.
-
-    def inception():
-        u1 = rcompose(AveragePooling1D(pool_size=3, strides=1, padding='same'),
-                      conv1D(48, 1))
-        u2 = conv1D(48, 1)
-        u3 = rcompose(conv1D(16, 1),
-                      conv1D(48, 3))
-        u4 = rcompose(conv1D(16, 1),
-                      conv1D(48, 3),
-                      conv1D(48, 3))
-
-        return rcompose(ljuxt(u1, u2, u3, u4),
-                        Concatenate(axis=2))
-
-    num_filters_ = 16
+    num_filters_ = 12
     kernel_size_ = 3
 
-    stacked_layers_ = [16,12, 8, 4, 1]
-    #stacked_layers_ = [20,16,12, 8, 4, 1]
+    stacked_layers_ = [12, 8, 4, 1]
     l_input = Input(batch_shape=shape)
-
-    # nnBlock = rcompose(GaussianNoise(stddev=0.02),
-    #                    conv1D_halve(16, 3),
-    #                    BatchNormalization(),
-    #                    Dropout(do_r),
-    #                    convBlock(48, 3, 48, 3, 48, 3, do_r),
-    #                    convBlock(16, 1, 48, 3, 48, 3, do_r),
-    #                    convBlock(16, 1, 48, 3, 48, 3, do_r),
-    #                    fire_module(8, 64),
-    #                    fire_module_with_shortcut(8, 64),
-    #                    fire_module(16, 128),
-    #                    Activation('mish'))
-    #
-    # x = nnBlock(l_input)
-    #input = Input(batch_shape=shape)
-    x = GaussianNoise(stddev=0.002)(l_input)
-    x = conv1D_halve(32, 3)(x)  #
+    x = conv1D_halve(24, 3)(l_input)  #
     x = BatchNormalization()(x)
     x = Dropout(do_r)(x)
-    b4 = Conv1D(16, 1, padding='same')(x)
-    x = convBlockEqual(16, 1, 24, 3, 16, 1, do_r)(b4)  #
+    b4 = Conv1D(12, 1, padding='same')(x)
+    x = convBlockEqual(12, 1, 24, 3, 12, 1, do_r)(b4)  #
     x = Multiply()([b4, x])
-    x = Conv1D(16, 3, padding='same')(x)
+    x = conv1D_halve(12, 1)(x)
 
     x = WaveNetResidualConv1D(num_filters_, kernel_size_, stacked_layers_[0])(x)
     x = Conv1D(num_filters_*2, 1, padding='same')(x)
@@ -163,24 +107,13 @@ def build_network(shape, num_classes,do_r = 0.2):
     x = WaveNetResidualConv1D(num_filters_*4, kernel_size_, stacked_layers_[2])(x)
     x = Conv1D(num_filters_*8, 1, padding='same')(x)
     x = WaveNetResidualConv1D(num_filters_*8, kernel_size_, stacked_layers_[3])(x)
-    x = Conv1D(num_filters_*16, 1, padding='same')(x)
-    x = WaveNetResidualConv1D(num_filters_*16, kernel_size_, stacked_layers_[4])(x)
-    # x = Conv1D(num_filters_*32, 1, padding='same')(x)
-    # x = WaveNetResidualConv1D(num_filters_*32, kernel_size_, stacked_layers_[5])(x)
 
     #l_output = Dense(num_classes, activation='softmax')(x)
     #add
-    x = Conv1D(num_filters_ * 32, 1, padding='same')(x)
+    x = Conv1D(num_filters_ * 16, 1, padding='same')(x)
     x = GlobalAveragePooling1D()(x)
     l_output = Dense(num_classes, activation='softmax')(x)
 
-    # x = Flatten()(x)
-    # x = Conv1D(num_classes, 1)(x)
-    # x = GlobalAveragePooling1D()(x)
-    # l_output = Softmax()(x)
-
     model = Model(inputs=[l_input], outputs=[l_output])
-    #opt = Adam(lr=LR)
-    #opt = tfa.optimizers.SWA(opt)
-    #nnmodels.compile(loss=losses.CategoricalCrossentropy(), optimizer=opt, metrics=['accuracy'])
+
     return model

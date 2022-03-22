@@ -6,7 +6,7 @@ from scipy import interpolate
 import pyarrow as pa
 import pyarrow.parquet
 import pandas as pd
-
+from ont_fast5_api.fast5_interface import get_fast5_file
 from signalalign import ViterbiSegmantation
 
 
@@ -204,7 +204,6 @@ def alginandremap(onerecord, aligner):
 from matplotlib import pyplot as plt
 from matplotlib import gridspec
 import numba
-from numba import jit
 
 import pysam
 def getrelpos(cigar,pos):
@@ -229,60 +228,42 @@ def getrelpos(cigar,pos):
             relpos = relpos + cigarlen
 
     return 0
-@jit
-def byteToHalf(b):
-    return int((b / 256.0) * 16.0)
-
-@jit
-def to16bit(a_trace):
-
-    print(a_trace)
-    _a = max(a_trace[0], a_trace[4])
-    _c = max(a_trace[1], a_trace[5])
-    _g = max(a_trace[2], a_trace[6])
-    _u = max(a_trace[3], a_trace[7])
-    _a = byteToHalf(_a)
-    _c = byteToHalf(_c)
-    _g = byteToHalf(_g)
-    _u = byteToHalf(_u)
-    #print(_a,_c,_g,_u)
-
-    a_bi = _a << 12
-    c_bi = _c << 8
-    g_bi = _g << 4
-    trace_bi = a_bi | c_bi | g_bi | _u
-    #print(bin(trace_bi))
-    return trace_bi
-
-
-def convertTo16bit(trace):
-
-    #return np.array(list(map(to16bit, trace)))
-    #f = np.frompyfunc(to16bit, 1, 1)
-    print(trace.shape)
-    return np.apply_along_axis(to16bit,1,trace)
-    #return f(trace)
 
 import itertools
 base_corresponding_table = {0:'A',2:'G',1:'C',3:'T',4:'A-',6:'G-',5:'C-',7:'T-'}
 base_color = {'A':'#228b22','T':'#db7093','G':'#ff8c00','C':'#4169e1','A-':'#228b22','T-':'#db7093','G-':'#ff8c00','C-':'#4169e1'}
-def plotboth(signal_t, signal_v,traceboundary,trace,move,lgenome,cigar,r_st):
+def plotboth(signal_t, signal_v,traceboundary,trace,move,lgenome,cigar,r_st,seg1,seg2,bases):
 
     limit = 25000
     fig = plt.figure(figsize=(360, 20))
 
-    gs = gridspec.GridSpec(2, 1, height_ratios=[0.5, 0.5])
+    gs = gridspec.GridSpec(3, 1, height_ratios=[0.3, 0.3, 0.3])
     ax1 = fig.add_subplot(gs[0])
-    ax2 = fig.add_subplot(gs[1])
-    # ax3 = fig.add_subplot(gs[2])
-    # ax4 = fig.add_subplot(gs[3])
+    #ax2 = fig.add_subplot(gs[1])
+    ax3 = fig.add_subplot(gs[1])
+    ax4 = fig.add_subplot(gs[2])
     # ax5 = fig.add_subplot(gs[4])
 
 
     #
     # plot signal
-    ax2.plot(signal_t, linewidth=2)
-    # ax5.plot(signal_v, linewidth=2)
+    #ax2.plot(signal_t, linewidth=2)
+    ax3.plot(signal_v, linewidth=2)
+    m = 0
+    for index in seg1:
+        color = 'black'
+        ax3.axvline(x=index, ymin=0, ymax=1, color=color, alpha=0.2)
+        ax3.text(index, 280, str(bases[m]), size=7, ha='center')
+        m +=1
+
+    ax4.plot(signal_v, linewidth=2)
+    m = 0
+    for index in seg2:
+        color = 'black'
+        ax4.axvline(x=index, ymin=0, ymax=1, color=color, alpha=0.2)
+        ax4.text(index, 280, str(bases[m]), size=7, ha='center')
+        m +=1
+    #
 
     # plot trace
     traces = tuple(zip(*trace))
@@ -315,6 +296,8 @@ def plotboth(signal_t, signal_v,traceboundary,trace,move,lgenome,cigar,r_st):
         relpos = getrelpos(cigar,n)
         index = segmentation_positions[relpos]*10
         ax1.text(index, 260, nuc, size=7, color=base_color[nuc], ha='center')
+        ax4.text(index, 260, nuc, size=7, color=base_color[nuc], ha='center')
+
 
         genomicpos = r_st + n
         if genomicpos %10 == 0:
@@ -370,7 +353,8 @@ def getFastQ(f, key):
     return None
 
 import mappy as mp
-def getRecord(fdata):
+from ont_fast5_api.fast5_interface import get_fast5_file
+def getRecordO(fdata):
     binsize = 60
 
     with h5py.File(fdata, 'r') as f:
@@ -400,7 +384,7 @@ def getRecord(fdata):
             sgmean.append(mean)
             sgst.append(start)
             sglen.append(size)
-            bases.append(b)
+            bases.append(str(b).replace("b","").replace("'",""))
             seq = seq + str(b).replace("b","").replace("'","")
 
 
@@ -433,13 +417,61 @@ def getRecord(fdata):
         ctg,st,ed,cigar,md = "",0,0,"",""
         trace = trace[::-1].astype(np.int16)
 
-        trace16 = convertTo16bit(trace)
-
         viterbistart = len(signal) - 10 * len(trace)
 
         move = move[::-1].astype(np.int16)
-        tp = (mapped_chrom,mapped_strand,mapped_start,mapped_end,clipped_bases_start,clipped_bases_end,fastq,ctg,st,ed,cigar,md,move,trace,signal,sgmean,sgst,sglen,bases,viterbistart,raw_start)
+        tp = (raw_start,sgmean,sgst,sglen,bases)
         return tp
+
+    return None
+
+def getRecord(fdata,aligner):
+
+    binsize = 60
+    qvaluethres = 5
+
+    with get_fast5_file(fdata, mode="r") as f:
+        for read in f.get_reads():
+            try:
+                basecall_run = read.get_latest_analysis("Basecall_1D")
+                fastq = read.get_analysis_dataset(basecall_run, "BaseCalled_template/Fastq")
+                trace = read.get_analysis_dataset(basecall_run, "BaseCalled_template/Trace")
+                move = read.get_analysis_dataset(basecall_run, "BaseCalled_template/Move")
+                row_data = read.get_raw_data(scale=True)
+
+                #
+                seq = fastq.split("\n")[1]
+                chrom, strand, r_st, r_en, q_st, q_en, cigar_str = "", 0, 0, 0, 0, 0, ""
+                for hit in aligner.map(seq):
+                    # take tophit only
+                    chrom = hit.ctg
+                    strand = hit.strand
+                    r_st = hit.r_st
+                    r_en = hit.r_en
+                    q_st = hit.q_st
+                    q_en = hit.q_en
+                    # print(chrom,strand,r_st)
+                    read = nanoDocRead(read.read_id, chrom, strand, r_st, r_en, q_st, q_en, cigar_str, fastq, trace, move,
+                                       row_data)
+
+                    # filter by qvalue score
+                    if (read.mean_qscore > qvaluethres):
+
+                        # set reference
+                        lgenome = aligner.seq(chrom, start=r_st, end=r_en)
+                        if strand == -1:
+                            lgenome = mp.revcomp(lgenome)
+
+                        read.setrefgenome(lgenome)
+
+
+                    # take top hit only
+                    break
+            except KeyError:
+                print('Key Error')
+
+
+        return read
 
     return None
 
@@ -591,11 +623,36 @@ def traceseq(compactTrace):
 import os
 def searchPath(dir,id):
 
-    for pp in os.listdir(path=dir):
-        path = dir+"/"+pp +"/"+id+".fast5"
-        if os.path.exists(path):
-            return path
+    # for pp in os.listdir(path=dir):
+    #     path = dir+"/"+pp +"/"+id+".fast5"
+    #     if os.path.exists(path):
+    #         return path
+    path = dir + "/"  + id + ".fast5"
+    print(path)
+    if os.path.exists(path):
+        return path
     return None
+
+
+def getTomboSeq(raw_start,sgst,sglen,bases):
+
+    # print("1",raw_start)
+    # print("2", sgst)
+    # print("3", sglen)
+
+    ret = []
+    for st in sgst:
+        v = raw_start + st
+        ret.append(v)
+    return ret
+
+def getViterbiBond(traceboundary):
+
+    ret = []
+    for st in traceboundary:
+        ret.append(st*10)
+    return ret
+
 
 import seaborn as sns
 import pandas as pd
@@ -603,18 +660,26 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import signalalign.RemapUtils as ru
+from nanoDoc2.utils.nanoDocRead import nanoDocRead
+from nanoDoc2.utils import nanoDocUtils as nutils
+import nanoDoc2.preprocess.SignalNormalization as ss
 
 if __name__ == "__main__":
 
    dir ="/data/nanopore/rRNA/1623_native-multi/singleFast5"
-   id = "c13d69d5-bf10-4957-87c2-9550d424d913"
+   # id = "c13d69d5-bf10-4957-87c2-9550d424d913"
+   # id = "90287c6c-76b1-456a-ba86-6ac20104cea0"
+
+   dir = "/data/nanopore/IVT/m6aIVT"
+   id ="2751a494-6eb8-4a1a-970c-d7dfa429b093"
    path = searchPath(dir,id)
    print("path",path)
    #path = '/data/nanopore/rRNA/1623_ivt-multi/singleFast5/137/462bc3b0-c01e-4404-b289-aa22066df3c9.fast5'
    #path = '/data/nanopore/rRNA/1623_ivt-multi/singleFast5/273/1ea4c5e1-9ded-4873-9e18-0fb706e20e16.fast5'
    #path = '/data/nanopore/rRNA/1623_ivt-multi/singleFast5/118/c2610804-dcb2-4305-9fb6-ffc0a64a74f4.fast5'
    pathout = '/data/nanopore/rRNA/test'
-   ref ="/data/nanopore/reference/NC000913.fa"
+   #ref ="/data/nanopore/reference/NC000913.fa"
+   ref = "/data/nanopore/reference/Curlcake.fa"
    #indexf = "/data/nanopore/rRNA/test/index.txt"
    #path_w = pathout + "/sampleplingplan.txt"
 
@@ -622,18 +687,13 @@ if __name__ == "__main__":
 
    samplesize = 400
 
-   p = getRecord(path)
-   print(p)
    aligner = mp.Aligner(ref, preset="map-ont")
+   record = getRecord(path,aligner)
+   raw_start,sgmean,sgst,sglen,bases = getRecordO(path)
 
-   mapped_chrom, mapped_strand, mapped_start, mapped_end, clipped_bases_start, clipped_bases_end, fastq, ctg, st, ed, \
-    cigar, md, move, trace, signal, sgmean, sgst, sglen, bases, viterbistart, raw_start = p
-
-    # tRNA_species = hit.ctg, r_st = hit.r_st, r_en = hit.r_en,
-    # q_st = hit.q_st, q_en = hit.q_en, cigar_str = hit.cigar_str, MD = hit.MD, score = score
 
    chrom,strand, r_st, r_en, q_st, q_en, cigar_str = "", 0, 0, 0, 0, 0, ""
-   fastq = fastq.split("\n")
+   fastq = record.fastq.split("\n")
    seq = fastq[1]
 
    for hit in aligner.map(seq):
@@ -650,13 +710,10 @@ if __name__ == "__main__":
 
    print(chrom,strand,r_st,r_en,q_st,q_en,cigar_str)
    lgenome = aligner.seq(chrom, start=r_st, end=r_en)
-   print(len(lgenome),lgenome)
-   print(len(seq),seq.replace('U','T'))
-   # lgenome = lgenome[0:50]
-   # trace = trace[0:1500]
-   # move = move[0:1500]
-   # r_en = r_st +50
-   # q_en = q_st +50
+   # print(len(lgenome),lgenome)
+   # print(len(seq),seq.replace('U','T'))
+   trace = record.trace
+   move = record.move
    seq, cigar, left,traceoffset, traceboundary, frombasecaller_idx,possiblemove_idx = ViterbiSegmantation.flipplopViterbiEach(lgenome,
                                                                                                                 chrom,
                                                                                                                 strand,
@@ -666,67 +723,25 @@ if __name__ == "__main__":
                                                                                                                 q_en,
                                                                                                                 trace,
                                                                                                                 move)
-
-   print(len(seq), seq.replace('U', 'T'))
-   print(len(signal),raw_start, viterbistart)
-   print("information")
-   print(r_st, r_en)
-   print(r_st, r_st + ciglen(cigar))
-   signal_t = signal
-   signal_v = signal[viterbistart:]
-   signal_t = signal_t[::-1]  # reverse for rna
-   signal_t = signal_t[raw_start:]
-   signal_v = signal_v[::-1]  # reverse for rna
-   # frombasecaller_idx = frombasecaller_idx[0:50]
-   # signal_t = signal_t[0:15000]
-   # signal_v = signal_v[0:15000]
-   print(len(signal_t),len(signal_v))
-   signalmeans = getMeans(signal_v,traceboundary)
-   #signalmeans = getMeans(signal_v, frombasecaller_idx)
-
-   tombosignalmean = getMeansT(signal_t,sgst)
-   theorymean = theoryMean(fmercurrent,lgenome)
-
-   print(cigar, left,traceboundary)
-   print(signalmeans)
-   print(theorymean)
-   print("sgst",len(sgst),sgst)
-   print("traceboundary", len(traceboundary),traceboundary)
-   print("frombasecaller_idx",len(frombasecaller_idx),frombasecaller_idx)
+   # print(seq)
+   # print(cigar)
+   fmerDict = nutils.getCurrentDict(fmercurrent)
+   record.cigar_str = cigar
+   record.settraceboundary(traceboundary)
+   record.normSignal = ss.normalizeSignal(record, traceboundary, fmerDict)
 
 
-   shift,signalmeans,theorymean = predictShift(signalmeans,theorymean)
-   scaleshift = calcNormalizeScaleLMS(signalmeans,theorymean)
+   seg1 = getTomboSeq(raw_start,sgst,sglen,bases)
+   seg2 = getViterbiBond(traceboundary)
+   #print((raw_start,sgmean,sgst,sglen,bases))
+   print("seg1",seg1)
+   print("seg2",seg2)
 
 
-   print(scaleshift)
-   a =  scaleshift[0][0]
-   b =  scaleshift[1][0]
-   signal_t = signal_t * a + b
-   signal_v = signal_v * a + b
+   fig = plotboth(record.signal, record.normSignal,traceboundary,trace,move,lgenome,cigar,r_st,seg1,seg2,bases)
+   fig.savefig("/data/nanopore/testnormalize_trace4.png")
 
-   signal_t = np.clip(signal_t, 60, 160)
-   signal_t = np.clip(signal_v, 60, 160)
-   signal_t = signal_t -60  / 128
-   signal_v = signal_v - 60 / 128
-   fig = plotboth(signal_t, signal_v,traceboundary,trace,move,lgenome,cigar,r_st)
-   fig.savefig("/data/nanopore/testnormalize_trace2.png")
 
-   # print(type(scorematrix))
-   # print(scorematrix)
-   # plt.figure()
-   # sns.heatmap(scorematrix)
-   # plt.savefig('/data/nanopore/scoreMatrix.png')
-   #
-   # sc = toMatrix(frombasecaller_idx,traceboundary)
-   # print(sc)
-   # plt.figure()
-   # sns.heatmap(sc)
-   # plt.savefig('/data/nanopore/traceMatrix.png')
-   # plt.close('all')
-   #
-   # compactTrace = ru.toCompact(trace, possiblemove_idx,frombasecaller_idx)
-   # compactTrace = compactTrace[0:90]
-   # traceseq = traceseq(compactTrace)
-   # df = pd.DataFrame(data=scorematrix,columns=traceseq, index=list(lgenome))
-   # df.to_csv('/data/nanopore/score.csv')
+
+
+

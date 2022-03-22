@@ -29,7 +29,7 @@ class Counter:
     def getList(self):
         return self.l
 
-from nanoDoc2.utils.PqSignalFileReader import PqReader
+from nanoDoc2_1.utils.PqFileReader import PqReader
 import sys
 import random
 
@@ -40,7 +40,7 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
     cnt = 0
     for ref in refs:
         records = SeqIO.parse(ref, 'fasta')
-        fr = PqReader(pqs[cnt], ref,4000,IndelStrict=True)
+        fr = PqReader(pqs[cnt], ref,3000,IndelStrict=True)
 
         for record in records:
            print(record.name)
@@ -50,9 +50,9 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
            for n in range(30, len(seq)-30):
            #for n in range(30, 100):
 
-              smer = seq[n:n+5]
+              smer = seq[n:n+6]
               b4 = seq[n-1]
-              after = seq[n+6]
+              after = seq[n+7]
               v = b4+after
               depth = fr.getDepth(record.name,n,True)
               print(record.name,n,smer,depth)
@@ -99,9 +99,9 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
             path = pqs[fileidx]
             ref = refs[fileidx]
             print("init reader")
-            fr = PqReader(path,ref, 4000)
+            fr = PqReader(path,ref, 3000)
 
-        signals,sampledlen = fr.getRowData(chr, True, pos,takecnt=takecnt)
+        traces,signals,sampledlen = fr.getRowData(chr, True, pos,takecnt=takecnt)
         print(p,len(signals),takecnt)
         pfidx = fileidx
         if len(signals) > 0:
@@ -157,24 +157,7 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
         #     f.write(",".join(map(str, d)) + "\n")
         # f.close()
 
-if __name__ == "__main__":
 
-    ref1 = "/data/nanopore/reference/Curlcake.fa"
-    ref2 = "/data/nanopore/reference/Cov2_Korea.fa"
-
-    path_w = "/data/nanopore/nanoDoc2/5000signal.pq"
-    refs= [ref1,ref2]
-    pq1 = "/data/nanopore/nanoDoc2/testCurlcakeIVT"
-    pq2 = "/data/nanopore/nanoDoc2/testSARSCOV2"
-    pqs = [pq1,pq2]
-    #
-
-    # fr = PqReader(pq1, 4000)
-    # chr = "cc6m_2244_t7_ecorv"
-    # data = fr.getRowData(chr, True, 30, 50)
-
-    takeCnt = 5000
-    makeSamplePlan(refs,pqs, path_w,takeCnt)
 
 
 

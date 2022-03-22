@@ -135,11 +135,23 @@ def moda(a,shift):
             a.insert(0, 0.5)
         return np.array(a)
 
+from numba import jit
 
+def average(arr, n):
+    end =  n * int(len(arr)/n)
+    return np.mean(arr[:end].reshape(-1, n), 1).astype('float32')
+
+import scipy.signal as scisignal
 def downsample(array, npts):
-    interpolated = interp1d(np.arange(len(array)), array, axis = 0, fill_value = 'extrapolate')
-    downsampled = interpolated(np.linspace(0, len(array), npts))
+
+    # interpolated = interp1d(np.arange(len(array)), array, axis = 0, fill_value = 'extrapolate')
+    # downsampled = interpolated(np.linspace(0, len(array), npts))
+
+    #downsampled = scisignal.resample(array, npts)
+    downsampled = average(array, 2)
     return downsampled
+
+
 
 def getFunction(scaleshifts,traceboundary,window,step):
 
@@ -190,8 +202,8 @@ def normalizeSignal(read,traceboundary,fmerDict):
 
     #data = normalizeSignal_as_whole(read, traceboundary, fmerDict)
     # if data is not None:
-    #     data = downsampleAndFormat(data)
-    data = format(data)
+    data = downsampleAndFormat(data)
+    #data = format(data)
     return  data
 
 def format(signal):
@@ -220,8 +232,7 @@ def downsampleAndFormat(signal):
 
     signal = np.clip(signal, low_limit, high_limit)
     signal = ((signal-low_limit) / (high_limit-low_limit)) * 255
-    signal = np.around(signal.astype(np.float), 0)
-
+    signal = np.around(signal, 0)
     signal = np.clip(signal, 0, 255)
     signal = signal.astype(np.uint8)
 

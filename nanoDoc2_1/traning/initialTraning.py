@@ -7,73 +7,13 @@ import pandas as pd
 from tensorflow.keras.callbacks import ModelCheckpoint
 
 
-DATA_LENGTH = 768
+DATA_LENGTH = 512
 
 def loadpq(path, samplesize):
 
     df = pq.read_table(path).to_pandas()
     return df
 
-
-# def prepData(df1):
-#
-#     train_x = []
-#     test_x = []
-#     train_y = []
-#     test_y = []
-#     totalcnt = 0
-#     labelidx = df1["fmer"].unique().tolist()
-#
-#     cnt = 0
-#     for idx, row in df1.iterrows():
-#
-#         #flg = labelidx.index(row[0])
-#         #signal = np.array(list(row[1]))
-#         flg = row[0]
-#         signal = np.array(row[2])
-#
-#         test_x.extend(signal[0:DATA_LENGTH*1000])
-#         test_y.extend([flg]*1000)
-#         train_x.extend(signal[DATA_LENGTH*1000:DATA_LENGTH*4000])
-#         train_y.extend([flg]*3000)
-#         print(signal)
-#         print(flg,len(signal))
-#         # if cnt == 30000:
-#         #     break
-#         totalcnt += 1
-#
-#     print("totalcnt", totalcnt)
-#     train_x = np.array(train_x)
-#     test_x = np.array(test_x)
-#     train_y = np.array(train_y)
-#     test_y = np.array(test_y)
-#     num_classes = np.unique(train_y).size
-#     print(type(train_x))
-#
-#     print("train_x.shape", train_x.shape)
-#     print("test_x.shape", test_x.shape)
-#
-#     print(num_classes, 'classes')
-#
-#     print('y_train shape:', train_y.shape)
-#     print('y_test shape:', test_y.shape)
-#     train_x = train_x /255
-#     test_x = test_x /255
-#
-#     train_x = np.reshape(train_x, (-1, DATA_LENGTH, 1))
-#     test_x = np.reshape(test_x, (-1, DATA_LENGTH, 1))
-#     train_y = np.reshape(train_y, (-1, 1,))
-#     test_y = np.reshape(test_y, (-1, 1,))
-#
-#     train_y = tensorflow.keras.utils.to_categorical(train_y, num_classes)
-#     test_y = tensorflow.keras.utils.to_categorical(test_y, num_classes)
-#
-#     print('train_x:', train_x.shape)
-#     print('train_y:', train_y.shape)
-#     print('test_x shape:', test_x.shape)
-#     print('test_y shape:', test_y.shape)
-#
-#     return train_x, test_x, train_y, test_y, num_classes
 
 def prepData(df1):
 
@@ -119,7 +59,6 @@ def prepData(df1):
     train_x = train_x /255
     test_x = test_x /255
 
-    DATA_LENGTH_UNIT = 8*5
     train_x = np.reshape(train_x, (-1, DATA_LENGTH, 1))
     test_x = np.reshape(test_x, (-1, DATA_LENGTH, 1))
     train_y = np.reshape(train_y, (-1, 1,))
@@ -148,7 +87,7 @@ def main(s_data, s_out):
         #tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
         _main(s_data, s_out)
 
-import nanoDoc2.network.cnnwavenet as cnnwavenet
+import nanoDoc2_1.network.CnnWavenet as CnnWavenet
 def _main(s_data, s_out):
 
     batch_size = 512
@@ -163,7 +102,7 @@ def _main(s_data, s_out):
 
     # with tf.device("/cpu:0"):
 
-    model = cnnwavenet.build_network(shape=shape1, num_classes=num_classes)
+    model = CnnWavenet.build_network(shape=shape1, num_classes=num_classes)
     model.summary()
 
     # model = multi_gpu_model(model, gpus=gpu_count)  # add

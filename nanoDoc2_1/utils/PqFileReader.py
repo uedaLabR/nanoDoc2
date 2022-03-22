@@ -24,9 +24,26 @@ SEQ_TAKE_MARGIN = 3
 binsize = 2000
 takemargin = 10
 
+@jit
+def decode16bit(a_trace):
+
+    a = (a_trace & 0b1111000000000000) >> 12
+    c = (a_trace & 0b0000111100000000) >> 8
+    g = (a_trace & 0b0000000011110000) >> 4
+    t = (a_trace & 0b0000000000001111)
+    #
+    return (a,c,g,t)
+
+import numpy as np
+def decode(trace):
+
+    tp = list(map(decode16bit, trace))
+    ar = np.array(tp)
+    return ar
+
+
 from scipy import ndimage as ndi
 import statistics
-@jit
 def eachScore(nuc,atrace):
 
 
@@ -39,15 +56,25 @@ def eachScore(nuc,atrace):
     else:
         nucidx = 3
 
-    rowsum =np.sum(atrace, axis=1)
+    #print("atrace",atrace)
+    atrace = decode(atrace)
+    #print("decode",atrace)
+    if len(atrace) > 1:
+        rowsum =np.sum(atrace, axis=0)
+    else:
+        rowsum = atrace[0]
+
+    #print("rowsum",rowsum)
     sum = np.sum(rowsum)
     matchsum = rowsum[nucidx]
     return matchsum/sum
 
+import nanoDoc2_1.preprocess.WriteToFile as wr
 def getScore(subtraces,seq):
 
     score = 0
     upto = min(len(seq),len(subtraces))
+    #print(subtraces)
     for n in range(upto):
         nuc = seq[n]
         atrace = subtraces[n]
@@ -63,7 +90,7 @@ def analyzeIdxShift(subtraces,rseq):
     for n in range(6):
         seq = rseq[n:n+10]
         score = getScore(subtraces,seq)
-        idx = n-3
+        idx = n-1
         if score > maxscore:
             maxidx = idx
 
@@ -71,6 +98,15 @@ def analyzeIdxShift(subtraces,rseq):
     return maxidx
 
 import scipy.signal as scisignal
+from scipy.interpolate import interp1d
+def downsample(array, npts):
+
+    interpolated = interp1d(np.arange(len(array)), array, axis = 0, fill_value = 'extrapolate')
+    downsampled = interpolated(np.linspace(0, len(array), npts))
+    #downsampled = scisignal.resample(array, npts)
+    return downsampled
+
+
 def binSignal(trimsignal, trimlength, mode=1):
 
     if len(trimsignal) == trimlength:
@@ -78,8 +114,7 @@ def binSignal(trimsignal, trimlength, mode=1):
 
     if len(trimsignal) > trimlength:
         # trim from first
-        f_fft = scisignal.resample(trimsignal, trimlength)
-        return f_fft
+        return downsample(trimsignal, trimlength)
 
     else:
         #
@@ -106,12 +141,12 @@ def binSignal(trimsignal, trimlength, mode=1):
 
 def binTrace(trace, trimlength):
 
-    y,x = trace.shape
+    x = len(trace)
     if x == trimlength:
         return trace
     elif x > trimlength:
         half = (x-trimlength)//2-1
-        return trace[::,half:half+trimlength]
+        return trace[half:half+trimlength]
     else:
         half = (trimlength-x)//2 - 1
         left = trimlength - half- x
@@ -119,53 +154,20 @@ def binTrace(trace, trimlength):
             half = 0
         if left < 0:
             left  = 0
-        return np.pad(trace,[(0,0),(half,left)], 'constant')
+        return np.pad(trace, (half,left), 'constant')
 
 
-DATA_LENGTH = 768
-DATA_LENGTH_Trace = 77
+DATA_LENGTH = 512
+DATA_LENGTH_Trace = 100
 def binned(trimtrace, traceItv,trimUnitLength,rseq,signal):
 
-    start = 0
-    prev = 0
-    subtraces = []
-    index = []
-    for n in range(len(traceItv)):
-        if n == 0:
-            start = traceItv[0]
-            prev = 0
-            index.append(0)
-            continue
-        s = prev
-        e =  traceItv[n] - start
-        index.append(e)
-        subtrace = trimtrace[::,s:e]
-        prev = e
-        subtraces.append(subtrace)
 
-    #analizeIdx
-    idx = analyzeIdxShift(subtraces,rseq)
-    #print("idx",idx)
-    if idx < 1:
+    bintrace = binTrace(trimtrace,DATA_LENGTH_Trace)
+    if len(signal) == 0:
         return None
-    start = index[idx-2]
-    eidx = min(idx+5,len(subtraces))
-    if eidx <1:
-        return None
+    binsignal = binSignal(signal, DATA_LENGTH)
 
-    #print("s,e",(idx-2,eidx))
-    end = index[eidx]
-    subtrace = trimtrace[::,start:end]
-    if len(subtrace)  > DATA_LENGTH_Trace:
-        return None
-
-    #bintrace = binTrace(subtrace,DATA_LENGTH_Trace)
-    subsignal = signal[start*10:end*10]
-    if len(subsignal) ==0:
-        return None
-    binsignal = binSignal(subsignal, DATA_LENGTH)
-
-    return binsignal
+    return bintrace,binsignal
 
 
 def binnedEach(trimtrace, trimlength):
@@ -444,7 +446,7 @@ class PqReader:
             self.bufferData = None
             self.load(chr, pos, strand)
 
-        signals,sampledlen = self.getFormattedData(strand, pos,rseq,takecnt)
+        traces,signals,sampledlen = self.getFormattedData(strand, pos,rseq,takecnt)
         if sampledlen > self.maxreads_org:
             sampledlen = self.maxreads_org
             signals = signals[0:self.maxreads_org]
@@ -455,15 +457,15 @@ class PqReader:
                 #load and sample again since not enough sampling for this region
                 print("load data",depth,sampledlen)
                 self.load(chr, pos, strand)
-                signals,sampledlen = self.getFormattedData(strand, pos,rseq, takecnt)
+                traces,signals,sampledlen = self.getFormattedData(strand, pos,rseq, takecnt)
 
         if takecnt == -1:
             depth = self.getDepth(chr, pos, strand)
             if sampledlen < depth:
                 self.load(chr, pos, strand)
-                signals,sampledlen = self.getFormattedData(strand, pos,rseq, takecnt)
+                traces,signals,sampledlen = self.getFormattedData(strand, pos,rseq, takecnt)
 
-        return signals,sampledlen
+        return traces,signals,sampledlen
 
 
     def getRowSequence(self, chr, strand, pos,takecnt=-1):
@@ -503,20 +505,20 @@ class PqReader:
 
         #tp = (strand,start,end,cigar,pos,traceintervalLen)
 
-        rel0 = pos - _start - SEQ_TAKE_MARGIN +1
+        rel0 = pos - _start
         rel = self.correctCigar(rel0,cigar)
         start = rel
         if start < 2:
             # do not use lower end
             return None
 
-        rel = pos - _start + 6 + SEQ_TAKE_MARGIN +1
+        rel = pos - _start + 7
         end = self.correctCigar(rel, cigar)
         if end >= traceintervalLen:
             #end = traceintervalLen-1
             return None
         if self.IndelStrict:
-            expectedlen = 6 + (SEQ_TAKE_MARGIN*2)
+            expectedlen = 7
             if abs((end-start) - expectedlen) > 0: # Do not use cross Indel
                 #print((end-start))
                 return None
@@ -568,19 +570,17 @@ class PqReader:
         #print(traceItv)
         tracestart = traceItv[0]
         traceend = traceItv[-1]
-        trace = trace.reshape(-1,4)
-        trace = trace.T
-        trace_t = trace[::,tracestart:traceend]
-        signal_t = signal[tracestart*10:traceend*10]
+        trace_t = trace[tracestart:traceend]
+        signal_t = signal[tracestart*5:traceend*5]
         #print(signal)
         #
         ret = binned(trace_t,traceItv,DATA_LENGTH_UNIT,rseq,signal_t)
         if ret is None:
             return None
 
-        binsignal = ret
+        bintrace,binsignal = ret
         #print("signal trace",len(signal),trace.shape)
-        return binsignal
+        return bintrace,binsignal
 
     def getFormattedData(self, strand, pos,rseq,_takecnt):
 
@@ -596,7 +596,8 @@ class PqReader:
             if ret is not None:
 
 
-                signal  = ret
+                trace,signal  = ret
+                traces.append(trace)
                 signals.append(signal)
                 takecnt = takecnt + 1
                 #print("takecnt",takecnt,_takecnt)
@@ -605,4 +606,4 @@ class PqReader:
 
         # data = np.array(data)
         # data = data / 256
-        return signals,takecnt
+        return  traces,signals,takecnt

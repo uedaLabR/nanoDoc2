@@ -154,8 +154,6 @@ def h5tosegmantedPq(path,pathout,ref,fmercurrent,MAX_CORE,qvaluethres):
     mergeParquet(pathout, ncore)
 
 
-
-
 if __name__ == "__main__":
 
     path = '/data/nanopore/IVT/m6aIVT/multifast5/'
