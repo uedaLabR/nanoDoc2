@@ -32,15 +32,19 @@ class Counter:
 from nanoDoc2_1.utils.PqFileReader import PqReader
 import sys
 import random
+import mappy as mp
 
 def makeSamplePlan(refs,pqs,output_file,takeCnt):
 
     fivemerDict={}
     recordL=[]
     cnt = 0
+
     for ref in refs:
+
+        a = mp.Aligner(ref)
         records = SeqIO.parse(ref, 'fasta')
-        fr = PqReader(pqs[cnt], ref,3000,IndelStrict=True)
+        fr = PqReader(pqs[cnt], ref,1500,IndelStrict=True)
 
         for record in records:
            print(record.name)
@@ -51,6 +55,9 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
            #for n in range(30, 100):
 
               smer = seq[n:n+6]
+              rseq = a.seq(record.name, start=n, end=n + 6)
+              print(smer,rseq)
+
               b4 = seq[n-1]
               after = seq[n+7]
               v = b4+after
@@ -90,6 +97,7 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
     print("start reading row")
     datadict = {}
     cntloop = 0
+    l = 0
     for p in posList:
 
         fileidx,chr,pos,depth,takecnt,fmer = p
@@ -99,31 +107,48 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
             path = pqs[fileidx]
             ref = refs[fileidx]
             print("init reader")
-            fr = PqReader(path,ref, 3000)
+            fr = PqReader(path,ref, 1200)
 
         traces,signals,sampledlen = fr.getRowData(chr, True, pos,takecnt=takecnt)
         print(p,len(signals),takecnt)
         pfidx = fileidx
         if len(signals) > 0:
             if fmer in datadict:
-                datadict[fmer].extend(signals)
+
+                (tracel,signall) = datadict[fmer]
+                tracel.extend(traces)
+                signall.extend(signals)
+
             else:
-                d = []
-                d.extend(signals)
-                datadict[fmer] = d
+                tracel = []
+                signall = []
+                tracel.extend(traces)
+                signall.extend(signals)
+                datadict[fmer] = (tracel,signall)
+
+        l += 1
 
     #write to parquet
     keys = datadict.keys()
     keys = sorted(keys)
+    print(keys)
+    print(len(keys))
     dataf = []
     keyidx = 0
     for key in keys:
 
-        d = datadict[key]
-        random.shuffle(d)
-        for da in d:
-            da = da.flatten()
-            tp = (keyidx,key,da)
+        (tracel, signall) = datadict[key]
+        #print(signall)
+        print("data len", len(tracel))
+
+        for n in range(len(tracel)):
+
+            trace = tracel[n]
+            signal = signall[n]
+
+            signal = signal.flatten()
+            trace = trace.flatten()
+            tp = (keyidx,key,trace,signal)
             dataf.append(tp)
             keyidx += 1
 
@@ -132,11 +157,12 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
         [
             ('flg', uint32()),
             ('fmer', string()),
+            ('trace', list_(uint16())),
             ('signal', list_(float32()))
         ]
     )
     df = pd.DataFrame(dataf,
-                      columns=['flg','fmer', 'signal'])
+                      columns=['flg','fmer','trace','signal'])
     pd.set_option('display.max_rows', None)
 
 

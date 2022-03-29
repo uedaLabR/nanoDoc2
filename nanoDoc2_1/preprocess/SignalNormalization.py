@@ -202,7 +202,7 @@ def normalizeSignal(read,traceboundary,fmerDict):
 
     #data = normalizeSignal_as_whole(read, traceboundary, fmerDict)
     # if data is not None:
-    data = downsampleAndFormat(data)
+    data = format(data)
     #data = format(data)
     return  data
 
@@ -222,13 +222,13 @@ def format(signal):
     return signal
 
 
-def downsampleAndFormat(signal):
+def format(signal):
 
     low_limit = 40
     high_limit = 160
 
-    downsamplesize = len(signal) // 2 #half the size
-    signal = downsample(signal, downsamplesize)
+    #downsamplesize = len(signal) // 2 #half the size
+    #signal = downsample(signal, downsamplesize)
 
     signal = np.clip(signal, low_limit, high_limit)
     signal = ((signal-low_limit) / (high_limit-low_limit)) * 255

@@ -9,8 +9,7 @@ from keras.optimizers import SGD
 from keras import backend as K
 import itertools
 import keras
-
-from src.nanoDoc2 import cnnwavenet, cnnwavenet_keras
+from nanoDoc2_1.network import CnnWavenetDecDimention
 
 DATA_LENGTH = 420
 
@@ -188,7 +187,7 @@ def _train(s_data, s_out, nuc,bestwight ,samplesize , epoch_num):
     shape1 = (None, DATA_LENGTH, 1)
     optimizer = SGD(lr=5e-5, decay=0.00005)
 
-    model = cnnwavenet_keras.build_network(shape=shape1, num_classes=num_classes_org)
+    model = CnnWavenetDecDimention.build_network(shape=shape1, num_classes=num_classes_org)
     model.load_weights(bestwight)
     #model.layers.pop()  # remove last layer
     #model.layers.pop()  # remove last layer

@@ -5,7 +5,7 @@ from keras.regularizers import l2
 from keras.engine.base_layer import Layer
 from keras import backend as K
 
-from nanoDoc2.network import cnnwavenettrace_keras
+from nanoDoc2_1.network import CnnWavenetKeras
 
 
 class Mish(Layer):
@@ -52,50 +52,54 @@ def convBlockEqual(f1, k1, f2, k2, f3, k3, do_r):
                     Dropout(do_r))
 
 
-def WaveNetResidualConv1D(num_filters, kernel_size, stacked_layer):
+def cbr(x, out_layer, kernel, stride, dilation):
+    x = Conv1D(out_layer, kernel_size=kernel, dilation_rate=dilation, strides=stride, padding="same")(x)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
+    return x
 
-    def build_residual_block(l_input):
+def se_block(x_in, layer_n):
+    x = GlobalAveragePooling1D()(x_in)
+    x = Dense(layer_n//8, activation="relu")(x)
+    x = Dense(layer_n, activation="sigmoid")(x)
+    x_out=Multiply()([x_in, x])
+    return x_out
 
-        actv = Mish()
-        resid_input = l_input
-        for dilation_rate in [2**i for i in range(stacked_layer)]:
-            l_sigmoid_conv1d = Conv1D(
-              num_filters, kernel_size, dilation_rate=dilation_rate,
-              padding='same', activation='sigmoid')(l_input)
-            l_tanh_conv1d = Conv1D(
-             num_filters, kernel_size, dilation_rate=dilation_rate,
-             padding='same', activation=actv)(l_input)
-            l_input = Multiply()([l_sigmoid_conv1d, l_tanh_conv1d])
-            l_input = Conv1D(num_filters, 1, padding='same')(l_input)
-            resid_input = Add()([resid_input ,l_input])
-        return resid_input
-    return build_residual_block
+def resblock(x_in, layer_n, kernel, dilation, use_se=True):
+    x = cbr(x_in, layer_n, kernel, 1, dilation)
+    x = cbr(x, layer_n, kernel, 1, dilation)
+    if use_se:
+        x = se_block(x, layer_n)
+    x = Add()([x_in, x])
+    return x
 
 
 def build_network(shape, num_classes,do_r = 0.2):
 
-    model = cnnwavenettrace_keras.build_network(shape=shape, num_classes=num_classes)
-    model.load_weights("/data/nanopore/IVT_Trace/weight/weightwn_keras.hdf")
+    model = CnnWavenetKeras.build_network(shape=shape, num_classes=num_classes)
+    model.load_weights("/data/nanopore/IVT/weight/weightwn_keras.hdf")
 
-    do_r = 0.2
-    b4 = Dropout(do_r)(model.layers[-3].output)
+    do_r = 0.3
+    x = model.layers[-3].output
 
-    num_filters_ = [64, 42, 24, 16]
-    for n in range(4):
-        if n > 0:
-            b4 = Dropout(do_r)(x)
+    num_filters_ = [128,84,56,36,24]
+    for n in range(5):
+        x = Conv1D(num_filters_[n], 1, padding='same')(x)
+        b4 = Dropout(do_r)(x)
         x = convBlockEqual(num_filters_[n], 1, num_filters_[n], 3, num_filters_[n], 1, do_r)(b4)  #
-        x = Concatenate()([b4, x])
-        #x = MaxPooling1D(pool_size=2)(x)
+        x = Add()([b4, x])
+        x = se_block(x,num_filters_[n])
 
-    x = Conv1D(16, 1, padding='same')(x)
+    x = Conv1D(24, 1, padding='same')(x)
     x = GlobalAveragePooling1D()(x)
-    x = Dense(256, activation='relu')(x)
+    x = Dense(64)(x)
+    x = Dense(128)(x)
+    x = Dense(256)(x)
     l_output = Dense(num_classes, activation='softmax')(x)
     model_n = Model(inputs=model.inputs, outputs=[l_output])
 
     for layer in model_n.layers:
-        if layer.name == "conv1d_92":
+        if layer.name == "add_24":
             break
         else:
             layer.trainable = False

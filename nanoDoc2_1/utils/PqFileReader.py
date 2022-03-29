@@ -129,13 +129,17 @@ def binSignal(trimsignal, trimlength, mode=1):
         left = trimlength - siglen
         lefthalf = left // 2
 
-        rand1 = np.random.rand(lefthalf) * sigma
-        rand1 = rand1 + med
+
+
+        # rand1 = np.random.rand(lefthalf) * sigma
+        # rand1 = rand1 + med
         leftlen = trimlength - siglen - lefthalf
-        rand2 = np.random.rand(leftlen) * sigma
-        rand2 = rand2 + med
-        #
-        ret = np.concatenate([rand1, trimsignal, rand2])
+        # rand2 = np.random.rand(leftlen) * sigma
+        # rand2 = rand2 + med
+        # #
+        # ret = np.concatenate([rand1, trimsignal, rand2])
+
+        ret = np.concatenate([np.zeros(lefthalf), trimsignal, np.zeros(leftlen)])
 
         return ret
 
@@ -157,7 +161,7 @@ def binTrace(trace, trimlength):
         return np.pad(trace, (half,left), 'constant')
 
 
-DATA_LENGTH = 512
+DATA_LENGTH = 1024
 DATA_LENGTH_Trace = 100
 def binned(trimtrace, traceItv,trimUnitLength,rseq,signal):
 
@@ -504,21 +508,21 @@ class PqReader:
     def getRelativePos(self,strand,_start,end,cigar,pos,traceintervalLen):
 
         #tp = (strand,start,end,cigar,pos,traceintervalLen)
-
-        rel0 = pos - _start
+        margin = 1
+        rel0 = pos - _start - margin
         rel = self.correctCigar(rel0,cigar)
         start = rel
         if start < 2:
             # do not use lower end
             return None
 
-        rel = pos - _start + 7
+        rel = pos - _start + 7 +  margin
         end = self.correctCigar(rel, cigar)
         if end >= traceintervalLen:
             #end = traceintervalLen-1
             return None
         if self.IndelStrict:
-            expectedlen = 7
+            expectedlen = 9
             if abs((end-start) - expectedlen) > 0: # Do not use cross Indel
                 #print((end-start))
                 return None
@@ -566,12 +570,12 @@ class PqReader:
         #print(traceItv,sig_start, sig_end)
         if len(traceItv) < 2:
             return None
-
+        SignalUNIT = 10
         #print(traceItv)
         tracestart = traceItv[0]
         traceend = traceItv[-1]
         trace_t = trace[tracestart:traceend]
-        signal_t = signal[tracestart*5:traceend*5]
+        signal_t = signal[tracestart*SignalUNIT:traceend*SignalUNIT]
         #print(signal)
         #
         ret = binned(trace_t,traceItv,DATA_LENGTH_UNIT,rseq,signal_t)

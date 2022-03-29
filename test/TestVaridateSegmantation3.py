@@ -237,18 +237,17 @@ def plotboth(signal_t, signal_v,traceboundary,trace,move,lgenome,cigar,r_st,seg1
     limit = 25000
     fig = plt.figure(figsize=(360, 20))
 
-    gs = gridspec.GridSpec(3, 1, height_ratios=[0.3, 0.3, 0.3])
+    gs = gridspec.GridSpec(4, 1, height_ratios=[0.25, 0.25, 0.25, 0.25])
     ax1 = fig.add_subplot(gs[0])
     #ax2 = fig.add_subplot(gs[1])
     ax3 = fig.add_subplot(gs[1])
     ax4 = fig.add_subplot(gs[2])
-    # ax5 = fig.add_subplot(gs[4])
-
-
+    ax5 = fig.add_subplot(gs[3])
     #
     # plot signal
     #ax2.plot(signal_t, linewidth=2)
     ax3.plot(signal_v, linewidth=2)
+    ax5.plot(signal_t, linewidth=2)
     m = 0
     for index in seg1:
         color = 'black'
@@ -450,28 +449,26 @@ def getRecord(fdata,aligner):
                     r_en = hit.r_en
                     q_st = hit.q_st
                     q_en = hit.q_en
-                    # print(chrom,strand,r_st)
-                    read = nanoDocRead(read.read_id, chrom, strand, r_st, r_en, q_st, q_en, cigar_str, fastq, trace, move,
+                    print(chrom,strand,r_st)
+                    rec = nanoDocRead(read.read_id, chrom, strand, r_st, r_en, q_st, q_en, cigar_str, fastq, trace, move,
                                        row_data)
-
+                    print(rec)
                     # filter by qvalue score
-                    if (read.mean_qscore > qvaluethres):
+                    if (rec.mean_qscore > qvaluethres):
 
                         # set reference
                         lgenome = aligner.seq(chrom, start=r_st, end=r_en)
                         if strand == -1:
                             lgenome = mp.revcomp(lgenome)
 
-                        read.setrefgenome(lgenome)
-
-
+                        rec.setrefgenome(lgenome)
                     # take top hit only
-                    break
+                    return rec
             except KeyError:
                 print('Key Error')
 
 
-        return read
+        #return read
 
     return None
 
@@ -623,15 +620,15 @@ def traceseq(compactTrace):
 import os
 def searchPath(dir,id):
 
-    # for pp in os.listdir(path=dir):
-    #     path = dir+"/"+pp +"/"+id+".fast5"
-    #     if os.path.exists(path):
-    #         return path
-    path = dir + "/"  + id + ".fast5"
-    print(path)
-    if os.path.exists(path):
-        return path
-    return None
+    for pp in os.listdir(path=dir):
+        path = dir+"/"+pp +"/"+id+".fast5"
+        if os.path.exists(path):
+            return path
+    # path = dir + "/"  + id + ".fast5"
+    # print(path)
+    # if os.path.exists(path):
+    #     return path
+    #return None
 
 
 def getTomboSeq(raw_start,sgst,sglen,bases):
@@ -667,19 +664,19 @@ import nanoDoc2.preprocess.SignalNormalization as ss
 if __name__ == "__main__":
 
    dir ="/data/nanopore/rRNA/1623_native-multi/singleFast5"
-   # id = "c13d69d5-bf10-4957-87c2-9550d424d913"
-   # id = "90287c6c-76b1-456a-ba86-6ac20104cea0"
+   #id = "c13d69d5-bf10-4957-87c2-9550d424d913"
+   id = "90287c6c-76b1-456a-ba86-6ac20104cea0"
 
-   dir = "/data/nanopore/IVT/m6aIVT"
-   id ="2751a494-6eb8-4a1a-970c-d7dfa429b093"
+   # dir = "/data/nanopore/IVT/m6aIVT/"
+   # id ="2751a494-6eb8-4a1a-970c-d7dfa429b093"
    path = searchPath(dir,id)
    print("path",path)
    #path = '/data/nanopore/rRNA/1623_ivt-multi/singleFast5/137/462bc3b0-c01e-4404-b289-aa22066df3c9.fast5'
    #path = '/data/nanopore/rRNA/1623_ivt-multi/singleFast5/273/1ea4c5e1-9ded-4873-9e18-0fb706e20e16.fast5'
    #path = '/data/nanopore/rRNA/1623_ivt-multi/singleFast5/118/c2610804-dcb2-4305-9fb6-ffc0a64a74f4.fast5'
    pathout = '/data/nanopore/rRNA/test'
-   #ref ="/data/nanopore/reference/NC000913.fa"
-   ref = "/data/nanopore/reference/Curlcake.fa"
+   ref ="/data/nanopore/reference/NC000913.fa"
+   #ref = "/data/nanopore/reference/Curlcake.fa"
    #indexf = "/data/nanopore/rRNA/test/index.txt"
    #path_w = pathout + "/sampleplingplan.txt"
 
@@ -693,6 +690,7 @@ if __name__ == "__main__":
 
 
    chrom,strand, r_st, r_en, q_st, q_en, cigar_str = "", 0, 0, 0, 0, 0, ""
+   print(record)
    fastq = record.fastq.split("\n")
    seq = fastq[1]
 
@@ -739,7 +737,7 @@ if __name__ == "__main__":
 
 
    fig = plotboth(record.signal, record.normSignal,traceboundary,trace,move,lgenome,cigar,r_st,seg1,seg2,bases)
-   fig.savefig("/data/nanopore/testnormalize_trace4.png")
+   fig.savefig("/data/nanopore/testnormalize_trace5.png")
 
 
 

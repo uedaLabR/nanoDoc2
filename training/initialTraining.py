@@ -8,7 +8,6 @@ import os
 import pandas as pd
 from tensorflow.keras.callbacks import ModelCheckpoint
 import src.nanoDoc2.cnnnetwork as cnn_network
-from src.nanoDoc2 import cnnwavenet, cnnwavenet_keras
 
 DATA_LENGTH =  420
 
@@ -17,7 +16,7 @@ def loadpq(path, samplesize):
     df = pq.read_table(path).to_pandas()
     return df
 
-
+@jit
 def prepData(df1):
 
     train_x = []

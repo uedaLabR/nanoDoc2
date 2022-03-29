@@ -6,8 +6,9 @@ import tensorflow
 import pandas as pd
 from tensorflow.keras.callbacks import ModelCheckpoint
 
+from nanoDoc2_1.network import CnnWavenetDecDimention
 
-DATA_LENGTH =  160
+DATA_LENGTH =  1024
 
 def loadpq(path, samplesize):
 
@@ -23,19 +24,25 @@ def prepData(df1):
     test_y = []
     totalcnt = 0
     labelidx = df1["fmer"].unique().tolist()
+    print(labelidx)
+    print(len(labelidx))
+
+    signallen = 1024
 
     totalcnt = 0
     for idx, row in df1.iterrows():
 
         flg = labelidx.index(row[1])
-        trace = np.array(row[2])
+        signal = np.array(row[3])
+        # count = len(signal)/signallen
+        # print(count)
 
-        if totalcnt%5 == 0:
-            test_x.extend(trace)
+        if totalcnt%12 > 10:
+            test_x.extend(signal)
             test_y.append(flg)
-        #elif totalcnt%5 < 3:
+        #elif totalcnt%12 < 5 :
         else:
-            train_x.extend(trace)
+            train_x.extend(signal)
             train_y.append(flg)
 
         # if cnt == 30000:
@@ -60,9 +67,8 @@ def prepData(df1):
     train_x = train_x /255
     test_x = test_x /255
 
-    DATA_LENGTH_UNIT = 8*5
-    train_x = np.reshape(train_x, (-1, DATA_LENGTH_UNIT, 4))
-    test_x = np.reshape(test_x, (-1, DATA_LENGTH_UNIT, 4))
+    train_x = np.reshape(train_x, (-1, DATA_LENGTH, 1))
+    test_x = np.reshape(test_x, (-1, DATA_LENGTH, 1))
     train_y = np.reshape(train_y, (-1, 1,))
     test_y = np.reshape(test_y, (-1, 1,))
 
@@ -89,15 +95,19 @@ def main(s_data, s_out):
         #tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
         _main(s_data, s_out)
 
-import nanoDoc2.network.cnnwavenet_decfilter as cnnwavenet_decfilter
+import nanoDoc2_1.network.CnnWavenetDecDimention
 def _main(s_data, s_out):
 
     batch_size = 512
     gpu_count = 1
     samplesize = 2400
-    DATA_LENGTH = 40
+    DATA_LENGTH = 1024
 
-    shape1 = (None, DATA_LENGTH, 4)
+    shape1 = (None, DATA_LENGTH, 1)
+    num_classes = 4078
+    model = CnnWavenetDecDimention.build_network(shape=shape1, num_classes=num_classes)
+    model.summary()
+
     df = loadpq(s_data, samplesize)
     train_x, test_x, train_y, test_y, num_classes = prepData(df)
 
@@ -105,8 +115,6 @@ def _main(s_data, s_out):
 
     # with tf.device("/cpu:0"):
 
-    model = cnnwavenet_decfilter.build_network(shape=shape1, num_classes=num_classes)
-    model.summary()
 
     # model = multi_gpu_model(model, gpus=gpu_count)  # add
 
@@ -127,7 +135,7 @@ def _main(s_data, s_out):
                   metrics=['accuracy'])
     # model.load_weights(inweight)
 
-    history = model.fit(train_x, train_y, epochs=50, batch_size=batch_size, verbose=1,
+    history = model.fit(train_x, train_y, epochs=100, batch_size=batch_size, verbose=1,
               shuffle=True, validation_data=(test_x, test_y),callbacks=[modelCheckpoint])
 
     historypath ="/data/nanopore/IVT/lealent_dec_log.txt"
@@ -137,6 +145,6 @@ def _main(s_data, s_out):
 
 if __name__ == '__main__':
 
-    s_data = "/data/nanopore/nanoDoc2/5000traceeachFix.pq"
-    s_out = "/data/nanopore/IVT_Trace/weight_dec/"
+    s_data = "/data/nanopore/nanoDoc2_1/1200signal.pq"
+    s_out = "/data/nanopore/IVT/weight_dec/"
     main(s_data, s_out)
