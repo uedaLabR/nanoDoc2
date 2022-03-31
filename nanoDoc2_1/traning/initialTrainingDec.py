@@ -118,7 +118,8 @@ def _main(s_data, s_out):
 
     # model = multi_gpu_model(model, gpus=gpu_count)  # add
 
-    outweight = s_out + "/weightwn_keras_dec.hdf"
+    inweight = s_out + "/weightwn_keras_dec.hdf"
+    outweight = s_out + "/weightwn_keras_dec2.hdf"
     modelCheckpoint = ModelCheckpoint(filepath=outweight,
                                       monitor='val_accuracy',
                                       verbose=1,
@@ -133,12 +134,12 @@ def _main(s_data, s_out):
                                                              amsgrad=False),
                   # optimizer=opt,
                   metrics=['accuracy'])
-    # model.load_weights(inweight)
+    model.load_weights(inweight)
 
-    history = model.fit(train_x, train_y, epochs=100, batch_size=batch_size, verbose=1,
+    history = model.fit(train_x, train_y, epochs=50, batch_size=batch_size, verbose=1,
               shuffle=True, validation_data=(test_x, test_y),callbacks=[modelCheckpoint])
 
-    historypath ="/data/nanopore/IVT/lealent_dec_log.txt"
+    historypath ="/data/nanopore/IVT/lealent_dec_log2.txt"
     hist_df = pd.DataFrame(history.history)
     hist_df.to_csv(historypath)
 

@@ -81,7 +81,7 @@ def build_network(shape, num_classes,do_r = 0.2):
 
     do_r = 0.3
     x = model.layers[-3].output
-
+    #dec filter
     num_filters_ = [128,84,56,36,24]
     for n in range(5):
         x = Conv1D(num_filters_[n], 1, padding='same')(x)
@@ -90,11 +90,39 @@ def build_network(shape, num_classes,do_r = 0.2):
         x = Add()([b4, x])
         x = se_block(x,num_filters_[n])
 
-    x = Conv1D(24, 1, padding='same')(x)
-    x = GlobalAveragePooling1D()(x)
-    x = Dense(64)(x)
-    x = Dense(128)(x)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)  # 4
+    x = Flatten()(x)
+    x = Dense(1024)(x)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
+    x = Dropout(do_r)(x)
+    x = Dense(512)(x)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
+    x = Dropout(do_r)(x)
     x = Dense(256)(x)
+    x = Dense(192)(x)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
+    x = Dense(96)(x)
+    x = Dense(48)(x)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
+    x = Dense(24)(x)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
+    x = Dense(20)(x)
+    x = Activation("tanh", name="latent-features")(x)
+    x = Dense(24)(x)
+    x = Dense(48)(x)
+    x = Dense(96)(x)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
+    x = Dense(192)(x)
+    x = Dense(256)(x)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
     l_output = Dense(num_classes, activation='softmax')(x)
     model_n = Model(inputs=model.inputs, outputs=[l_output])
 

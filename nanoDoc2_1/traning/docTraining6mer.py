@@ -28,9 +28,9 @@ def getNearExculudeSelf(nuc):
     return gen
 
 import os
-def prepDataNear(s_data,samplesize, nuc):
+def prepDataNear(s_data2,samplesize, nuc):
 
-    s_data = '/data/nanopore/IVT/2400eachpq'
+
     train_x = []
     test_x = []
     train_y = []
@@ -40,7 +40,7 @@ def prepDataNear(s_data,samplesize, nuc):
     totalcnt = 0
 
     nucs = getNearExculudeSelf(nuc)
-    paths = list(map(lambda x: s_data + "/" + x + ".pq", nucs))
+    paths = list(map(lambda x: s_data2 + "/" + x + ".pq", nucs))
 
     samplecnt = 0
     for path in paths:
@@ -62,12 +62,8 @@ def prepDataNear(s_data,samplesize, nuc):
             signal = signal.astype('float16') / 255.
 
             testidx = (idx % 12 >= 10)
-            if testidx:
-                test_x.append(signal)
-                test_y.append(samplecnt)
-            else:
-                train_x.append(signal)
-                train_y.append(samplecnt)
+            train_x.append(signal)
+            train_y.append(samplecnt)
 
             cnt = cnt + 1
             totalcnt = totalcnt + 1
@@ -119,13 +115,9 @@ def prepData(s_data,samplesize, nuc):
         signal = np.array(signal)
         signal = signal.astype('float16') / 255.
 
-        testidx = (idx % 12 >= 10)
-        if testidx:
-            test_x.append(signal)
-            test_y.append(flg)
-        else:
-            train_x.append(signal)
-            train_y.append(flg)
+        #testidx = (idx % 12 >= 10)
+        train_x.append(signal)
+        train_y.append(flg)
 
         cnt = cnt + 1
         totalcnt = totalcnt + 1
@@ -162,22 +154,22 @@ alpha = 0.5  # for MobileNetV2
 lambda_ = 0.1  # for compact loss
 
 import tensorflow as tf
-def train(s_data, s_out, nuc,bestwight ,samplesize , epoch_num):
+def train(s_data1,s_data2, s_out, nuc,bestwight ,samplesize , epoch_num):
 
     with tf.device('/GPU:1'):
 
         os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
         os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
         #tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
-        _train(s_data, s_out, nuc,bestwight ,samplesize , epoch_num)
+        _train(s_data1,s_data2, s_out, nuc,bestwight ,samplesize , epoch_num)
 
-def _train(s_data, s_out, nuc,bestwight ,samplesize , epoch_num):
+def _train(s_data1,s_data2,, s_out, nuc,bestwight ,samplesize , epoch_num):
 
     if not os.path.exists(s_out + '/' + nuc):
         os.makedirs(s_out + '/' + nuc)
 
     logf = open(s_out + '/' + nuc+'/log.txt', mode='w')
-    pqpath = s_data + "/" + nuc + ".pq"
+    pqpath = s_data1 + "/" + nuc + ".pq"
     if not os.path.exists(pqpath):
       print("no pq for",pqpath)
       return
@@ -189,18 +181,15 @@ def _train(s_data, s_out, nuc,bestwight ,samplesize , epoch_num):
 
     model = CnnWavenetDecDimention.build_network(shape=shape1, num_classes=num_classes_org)
     model.load_weights(bestwight)
-    #model.layers.pop()  # remove last layer
-    #model.layers.pop()  # remove last layer
-    #model.layers.pop()  # remove last layer
 
 
     for layer in model.layers:
-        if layer.name == "conv1d_60":
+        if layer.name == "conv1d_99":
             break
         else:
             layer.trainable = False
 
-    flat = GlobalAveragePooling1D()(model.layers[-4].output)
+    flat = GlobalAveragePooling1D()(model.layers[-11].output)
     model_t = Model(inputs=model.input, outputs=flat)
     model_r = Network(inputs=model_t.input,
                       outputs=flat,
@@ -217,8 +206,8 @@ def _train(s_data, s_out, nuc,bestwight ,samplesize , epoch_num):
     model_t.summary()
 
     print("reading data")
-    x_ref, test_x_r, y_ref, test_y_r, num_classes_r = prepDataNear(s_data,samplesize, nuc)
-    x_target, test_x, train_y, test_y, num_classes = prepData(s_data,samplesize, nuc)
+    x_ref, test_x_r_o, y_ref, test_y_r_o, num_classes_r = prepDataNear(s_data2,samplesize, nuc)
+    x_target, test_x, train_yo, test_yo, num_classes = prepData(s_data1,samplesize, nuc)
 
     ref_samples = np.arange(x_ref.shape[0])
 
@@ -281,4 +270,22 @@ import sys
 
 if __name__ == '__main__':
 
-    train(sys.argv[2], sys.argv[3], sys.argv[1], 10)
+    #train(sys.argv[2], sys.argv[3], sys.argv[1], 10)
+    s_out = "/data/nanopore/IVT/weight/"
+    bestwight = s_out + "/weightwn_keras_dec2.hdf"
+    epoch_num = 5
+    #train(sys.argv[2], sys.argv[3], sys.argv[1], 10)
+
+
+    nucs = ('A', 'T', 'C', 'G')
+    cnt = 0
+    for n1, n2, n3, n4, n5 ,n6 in itertools.product(nucs, nucs, nucs, nucs, nucs, nucs):
+
+        s_data1 = "/data/nanopore/nanoDoc2_1/10000signal"
+        s_data2 = "/data/nanopore/nanoDoc2_1/100signal"
+        s_out = "/data/nanopore/nanoDoc2_1/weight/docweight"
+        nuc = n1+n2+n3+n4+n5+n6
+        epoch_num = 5
+        samplesize = 10000
+        train(s_data1,s_data2, s_out, nuc, bestwight, samplesize, epoch_num)
+        cnt+=1
