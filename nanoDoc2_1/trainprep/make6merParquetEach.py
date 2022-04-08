@@ -1,3 +1,5 @@
+import os
+
 import pyarrow.parquet as pq
 import pandas as pd
 from Bio import SeqIO
@@ -33,6 +35,75 @@ from nanoDoc2_1.utils.PqFileReader import PqReader
 import sys
 import random
 import mappy as mp
+from numba import jit
+
+def toTuple(tracel, signall,key):
+    # print(signall)
+    dataf = []
+    keyidx = 0
+    for n in range(len(tracel)):
+        trace = tracel[n]
+        signal = signall[n]
+        signal = signal.flatten()
+        trace = trace.flatten()
+        tp = (keyidx, key, trace, signal)
+        dataf.append(tp)
+        keyidx += 1
+
+    return dataf
+
+def toData(datadict):
+
+    keys = datadict.keys()
+    outdict = {}
+    keyidx = 0
+    for key in keys:
+
+        (tracel, signall) = datadict[key]
+        dataf = toTuple(tracel, signall, key)
+        outdict[key] = dataf
+
+    return outdict
+
+def bufferout(output_file, datadict, writecnt):
+
+    keys = datadict.keys()
+
+    keyidx = 0
+    pschema = schema(
+        [
+            ('flg', uint32()),
+            ('fmer', string()),
+            ('trace', list_(uint16())),
+            ('signal', list_(float32()))
+        ]
+    )
+
+    print("buffer writing", len(keys))
+    outdict = toData(datadict)
+    keys = outdict.keys()
+    for key in keys:
+
+        dataf = outdict[key]
+        df = pd.DataFrame(dataf,
+                      columns=['flg','fmer','trace','signal'])
+
+        pd.set_option('display.max_rows', None)
+        pyarrow_table = Table.from_pandas(df, pschema)
+
+        outd = output_file +"/"+key
+        if not os.path.exists(outd):
+            os.mkdir(outd)
+        outf = outd+"/"+str(writecnt)+".pq"
+
+        pq.write_table(
+            pyarrow_table,
+            outf,
+            row_group_size=4000,
+            compression='snappy',
+            flavor=['spark'],
+        )
+
 
 def makeSamplePlan(refs,pqs,output_file,takeCnt):
 
@@ -96,10 +167,10 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
 
     print("start reading row")
     datadict = {}
-    cntloop = 0
-    l = 0
+    poscnt = 0
+    writecnt = 0
     for p in posList:
-
+        poscnt +=1
         fileidx,chr,pos,depth,takecnt,fmer = p
 
         #
@@ -107,10 +178,12 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
             path = pqs[fileidx]
             ref = refs[fileidx]
             print("init reader")
-            fr = PqReader(path,ref, 1200)
+            fr = PqReader(path,ref, takeCnt)
+
 
         traces,signals,sampledlen = fr.getRowData(chr, True, pos,takecnt=takecnt)
         print(p,len(signals),takecnt)
+
         pfidx = fileidx
         if len(signals) > 0:
             if fmer in datadict:
@@ -126,56 +199,60 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
                 signall.extend(signals)
                 datadict[fmer] = (tracel,signall)
 
-        l += 1
+            if poscnt %1000 == 0:
+                writecnt+=1
+                bufferout(output_file,datadict,writecnt)
+                datadict = {}
+
+    writecnt += 1
+    bufferout(output_file, datadict, writecnt)
 
     #write to parquet
-    keys = datadict.keys()
-    keys = sorted(keys)
-    print(keys)
-    print(len(keys))
-
-    keyidx = 0
-    for key in keys:
-
-        (tracel, signall) = datadict[key]
-        #print(signall)
-        print("data len", len(tracel))
-        dataf = []
-        for n in range(len(tracel)):
-
-            trace = tracel[n]
-            signal = signall[n]
-
-            signal = signal.flatten()
-            trace = trace.flatten()
-            tp = (keyidx,key,trace,signal)
-            dataf.append(tp)
-            keyidx += 1
-
-
-        pschema = schema(
-            [
-                ('flg', uint32()),
-                ('fmer', string()),
-                ('trace', list_(uint16())),
-                ('signal', list_(float32()))
-            ]
-        )
-
-
-        df = pd.DataFrame(dataf,
-                          columns=['flg','fmer','trace','signal'])
-        pd.set_option('display.max_rows', None)
-
-        fout = output_file+"/"+key+".pq"
-        pyarrow_table = Table.from_pandas(df, pschema)
-        pq.write_table(
-            pyarrow_table,
-            fout,
-            row_group_size=4000,
-            compression='snappy',
-            flavor=['spark'],
-        )
+    # keys = datadict.keys()
+    # keys = sorted(keys)
+    # print(keys)
+    # print(len(keys))
+    # dataf = []
+    # keyidx = 0
+    # for key in keys:
+    #
+    #     (tracel, signall) = datadict[key]
+    #     #print(signall)
+    #     print("data len", len(tracel))
+    #
+    #     for n in range(len(tracel)):
+    #
+    #         trace = tracel[n]
+    #         signal = signall[n]
+    #
+    #         signal = signal.flatten()
+    #         trace = trace.flatten()
+    #         tp = (keyidx,key,trace,signal)
+    #         dataf.append(tp)
+    #         keyidx += 1
+    #
+    #
+    #     pschema = schema(
+    #         [
+    #             ('flg', uint32()),
+    #             ('fmer', string()),
+    #             ('trace', list_(uint16())),
+    #             ('signal', list_(float32()))
+    #         ]
+    #     )
+    #     df = pd.DataFrame(dataf,
+    #                       columns=['flg','fmer','trace','signal'])
+    #     pd.set_option('display.max_rows', None)
+    #
+    #     outf = output_file +"/"+ str(key) +".pw"
+    #     pyarrow_table = Table.from_pandas(df, pschema)
+    #     pq.write_table(
+    #         pyarrow_table,
+    #         outf,
+    #         row_group_size=4000,
+    #         compression='snappy',
+    #         flavor=['spark'],
+    #     )
 
         # sidx = 0
         # sb4 = None

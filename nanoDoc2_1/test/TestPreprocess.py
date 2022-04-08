@@ -6,9 +6,9 @@ if __name__ == "__main__":
     pathout = '/data/nanopore/nanoDoc2_1/CurlcakeIVT'
     ref = "/data/nanopore/reference/Curlcake.fa"
 
-    # path = '/data/nanopore/rRNA/1623_ivt-multi/multifast5_2/workspace'
-    # pathout = '/data/nanopore/nanoDoc2/1623_ivt'
-    # ref = "/data/nanopore/reference/NC000913.fa"
+    path = '/data/nanopore/rRNA/1623_ivt-multi/multifast5_2/workspace'
+    pathout = '/data/nanopore/nanoDoc2_1/1623_ivt'
+    ref = "/data/nanopore/reference/NC000913.fa"
     fmercurrent = "/data/nanopore/signalStatRNA180.txt"
 
 

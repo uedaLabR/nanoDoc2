@@ -459,7 +459,7 @@ class PqReader:
             depth = self.getDepth(chr, pos, strand)
             if depth > sampledlen + 30:
                 #load and sample again since not enough sampling for this region
-                print("load data",depth,sampledlen)
+                print("load data",depth,sampledlen,takecnt)
                 self.load(chr, pos, strand)
                 traces,signals,sampledlen = self.getFormattedData(strand, pos,rseq, takecnt)
 

@@ -7,14 +7,16 @@ if __name__ == "__main__":
 
     path_w = "/data/nanopore/nanoDoc2_1/10000signal/"
     refs= [ref1,ref2]
+    #refs = [ref1]
     pq1 = "/data/nanopore/nanoDoc2_1/CurlcakeIVT"
     pq2 = "/data/nanopore/nanoDoc2_1/SARSCOV2"
     pqs = [pq1,pq2]
+    #pqs = [pq1]
     #
 
     # fr = PqReader(pq1, 4000)
     # chr = "cc6m_2244_t7_ecorv"
     # data = fr.getRowData(chr, True, 30, 50)
 
-    takeCnt = 10000
+    takeCnt = 12750
     make6merParquetEach.makeSamplePlan(refs,pqs, path_w,takeCnt)

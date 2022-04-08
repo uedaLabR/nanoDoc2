@@ -7,6 +7,10 @@ if __name__ == "__main__":
     ref = "/data/nanopore/reference/Cov2_Korea.fa"
     fmercurrent = "/data/nanopore/signalStatRNA180.txt"
 
+    path = '/data/nanopore/rRNA/1623_native-multi/multifast5_2/workspace'
+    pathout = '/data/nanopore/nanoDoc2_1/1623_wt'
+    ref = "/data/nanopore/reference/NC000913.fa"
+    fmercurrent = "/data/nanopore/signalStatRNA180.txt"
 
     MAX_CORE = 24
     qvaluethres = 5

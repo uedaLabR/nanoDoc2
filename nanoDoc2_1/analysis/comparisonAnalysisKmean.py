@@ -10,18 +10,17 @@ from tensorflow.keras import Model
 from nanoDoc2.network import cnnwavenet_decfilter
 
 DATA_LENGTH_UNIT = 60
-DATA_LENGTH = 40
+DATA_LENGTH = 1024
 from numba import jit,u1,i8,f8
-from nanoDoc2.utils.PqTraceFileReader import PqReader
+from nanoDoc2_1.utils.PqFileReader import PqReader
+from nanoDoc2_1.network import CnnWavenetDecDimention
 
 def getModel():
 
-    shape1 = (None, DATA_LENGTH, 4)
-    num_classes_org = 1024
-    # with tf.device("/cpu:0"):
-    #model = cnnwavenettrace.build_network(shape=shape1, num_classes=num_classes_org)
-    model = cnnwavenet_decfilter.build_network(shape=shape1, num_classes=num_classes_org)
-    flat = GlobalAveragePooling1D()(model.layers[-4].output)
+    num_classes_org = 4078
+    shape1 = (None, DATA_LENGTH, 1)
+    model = CnnWavenetDecDimention.build_network(shape=shape1, num_classes=num_classes_org)
+    flat = model.layers[-11].output
     model_t = Model(inputs=model.input, outputs=flat)
     model_t.summary()
     return model_t
@@ -58,21 +57,14 @@ def callPlusStrand(wfile, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, t
                    end, refpq, targetpq, minreadlen):
     strand = "+"
     res = None #faiss.StandardGpuResources()
-    for n in range(start, end-5):
-        subs = seq[(n - start):(n - start) + 5]
+    for n in range(start, end-6):
+        subs = seq[(n - start):(n - start) + 6]
         cnt, cntref = eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr,
                                   model_t, fw, chrom,
                                   chromtgt,res)
 
 
-def getFormat(traces):
 
-    traces = np.array(traces)
-    traces = traces/255
-    DATA_LENGTH_UNIT = 8 * 5
-    traces = np.reshape(traces, (-1, DATA_LENGTH_UNIT, 4))
-
-    return traces
 
 
 import faiss
@@ -186,7 +178,7 @@ def getScoreFromCluster(xref, xrow, niter):
     print(x.shape)
     nn, d = x.shape
     mindatasizeFor3centroid = 120
-    scorenormalizefactor = 130
+    scorenormalizefactor = 150
 
     k = 3 # k=3 for clustering one for unmod, one for mod, other
     if nn < mindatasizeFor3centroid: #if data size < 120 to small to 3 centroids
@@ -226,12 +218,19 @@ def getScoreFromCluster(xref, xrow, niter):
     maxscore = maxscore
     return maxscore
 
+def getFormat(dlist):
+
+    signal = np.array(dlist)
+    signal = signal.astype('float16') / 255
+    train_x = np.reshape(signal, (-1, DATA_LENGTH, 1))
+
+    return train_x
 
 def eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr, model_t, fw,
                 chrom,
                 chromtgt,res):
 
-    weight_path = wfile + "/" +str(subs) + "/model_t_ep_1.h5"
+    weight_path = wfile + "/" +str(subs) + "/model_t_ep_2.h5"
     if not os.path.isfile(weight_path):
         #     no 6mer found
         print(weight_path)
@@ -242,9 +241,9 @@ def eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile,
         return (0, 0)
 
     # target signal
-    rawdatas, cnt = targetpr.getRowData(chromtgt, strand, n, uplimit)
+    rtraces, rawdatas, cnt = targetpr.getRowData(chromtgt, strand, n, uplimit)
     # reference signal
-    refdatas, cntref = refpr.getRowData(chrom, strand, n, cnt)
+    retraces,refdatas, cntref = refpr.getRowData(chrom, strand, n, cnt)
 
     #    reference start or end, or nodepth
     if (cnt < 5 or cntref < 5 or (rawdatas is None) or (refdatas is None)):
@@ -282,7 +281,7 @@ def eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile,
     return (cnt, cntref)
 
 
-def modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, end, strand, minreadlen,uplimit = 2000):
+def modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, end, strand, minreadlen,uplimit = 1000):
 
 
     if chrom == "":
@@ -317,41 +316,42 @@ import sys
 
 if __name__ == '__main__':
 
-    #    wfile = "/groups2/gac50430/nanopore/dataset4DL/weight5merm6A/"
-    #    paramf = "/groups2/gac50430/nanopore/shell/modcall/param.txt"
-    #    ref ="/groups2/gac50430/nanopore/reference/NC000913.fa"
-    #    refpq = "/groups2/gac50430/nanopore/equalbinnedpq/ecrRnaIvt"
-    #    targetpq = "/groups2/gac50430/nanopore/equalbinnedpq/ecrRnaNative"
-    #    out = "/groups2/gac50430/nanopore/detection/ecoli/23S\m6aplus.txt"
-    #    chrom = "NC_000913.3"
-    #    start = 4037519+1600
-    #    end =  4037519+1730
+   # wfile = "/groups2/gac50430/nanopore/dataset4DL/weight5merm6A/"
+   # paramf = "/groups2/gac50430/nanopore/shell/modcall/param.txt"
+   # ref ="/groups2/gac50430/nanopore/reference/NC000913.fa"
+   # refpq = "/groups2/gac50430/nanopore/equalbinnedpq/ecrRnaIvt"
+   # targetpq = "/groups2/gac50430/nanopore/equalbinnedpq/ecrRnaNative"
+   # out = "/groups2/gac50430/nanopore/detection/ecoli/23S\m6aplus.txt"
+   # chrom = "NC_000913.3"
+   # start = 4037519+1600
+   # end =  4037519+1730
 
-    # wfile = "/data/nanopore/IVT/doc_weight_bk2"
-    # paramf = "/data/param20.txt"
-    # ref = "/data/nanopore/reference/NC000913.fa"
-    # refpq = "/data/nanopore/rRNA/1623_ivtpq"
-    # targetpq = "/data/nanopore/rRNA/1623_nativepq"
-    # # out = "/data/nanopore/rRNA/16S_test.txt"
-    # out = "/data/nanopore/rRNA/23S_test.txt"
-    # chrom = "NC_000913.3"
-    # chromtgt = "NC_000913.3"
-    # # start = 4035531
-    # # end = start+1541
-    # start = 4037519
-    # end = 4040423
+    wfile = "/data/nanopore/nanoDoc2_1/weight/docweight"
+    paramf = "/data/param20.txt"
+    ref = "/data/nanopore/reference/NC000913.fa"
+    refpq = "/data/nanopore/nanoDoc2_1/1623_ivt"
+    targetpq = "/data/nanopore/nanoDoc2_1/1623_wt"
+    # out = "/data/nanopore/rRNA/16S_test.txt"
+    out = "/data/nanopore/nanoDoc2_1/23S_test.txt"
+    chrom = "NC_000913.3"
+    chromtgt = "NC_000913.3"
+    # start = 4035531
+    # end = start+1541
+    start = 4037519
+    end = 4040423
+    strand = "+"
 
     #    modCall(wfile,paramf,ref,refpq,targetpq,out,chrom,start,end)
-    wfile = sys.argv[1]
-    paramf = sys.argv[2]
-    ref = sys.argv[3]
-    refpq = sys.argv[4]
-    targetpq = sys.argv[5]
-    out = sys.argv[6]
-    chrom = sys.argv[7]
-    start = int(sys.argv[8])
-    end = int(sys.argv[9])
-    strand = sys.argv[10]
+    # wfile = sys.argv[1]
+    # paramf = sys.argv[2]
+    # ref = sys.argv[3]
+    # refpq = sys.argv[4]
+    # targetpq = sys.argv[5]
+    # out = sys.argv[6]
+    # chrom = sys.argv[7]
+    # start = int(sys.argv[8])
+    # end = int(sys.argv[9])
+    # strand = sys.argv[10]
     #    minreadlen = 700
     minreadlen = 200
     #    if len(sys.argv) > 11 :
@@ -362,5 +362,10 @@ if __name__ == '__main__':
     #     chromtgt = "hCoV-19/England/02/2020|EPI_ISL_407073"
     # if "austraria" in out:
     #     chromtgt = "MT007544.1"
-    modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, end, strand, minreadlen)
+    with tf.device('/CPU:0'):
+        # os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
+        # os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
+        os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
+        modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, end, strand, minreadlen)
 

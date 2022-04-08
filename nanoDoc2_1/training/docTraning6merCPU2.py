@@ -11,7 +11,7 @@ import itertools
 import keras
 from nanoDoc2_1.network import CnnWavenetDecDimention
 
-DATA_LENGTH = 420
+DATA_LENGTH = 1024
 
 
 def getNearExculudeSelf(nuc):
@@ -40,6 +40,7 @@ def prepDataNear(s_data2,samplesize, nuc):
     totalcnt = 0
 
     nucs = getNearExculudeSelf(nuc)
+    print(nucs)
     paths = list(map(lambda x: s_data2 + "/" + x + ".pq", nucs))
 
     samplecnt = 0
@@ -57,7 +58,7 @@ def prepDataNear(s_data2,samplesize, nuc):
         for idx, row in df.iterrows():
 
             flg = row[1]
-            signal = np.array(list(row[2]))
+            signal = np.array(list(row[3]))
             signal = np.array(signal)
             signal = signal.astype('float16') / 255.
 
@@ -110,11 +111,11 @@ def prepData(s_data,samplesize, nuc):
     cnt = 0
     for idx, row in df.iterrows():
 
-        flg = row[1]
-        signal = np.array(list(row[2]))
-        signal = np.array(signal)
+        flg = 1
+        signal = np.array(list(row[3]))
         signal = signal.astype('float16') / 255.
-
+        # print(signal)
+        # print(type(signal))
         #testidx = (idx % 12 >= 10)
         train_x.append(signal)
         train_y.append(flg)
@@ -156,14 +157,15 @@ lambda_ = 0.1  # for compact loss
 import tensorflow as tf
 def train(s_data1,s_data2, s_out, nuc,bestwight ,samplesize , epoch_num):
 
-    with tf.device('/GPU:1'):
+    with tf.device('/CPU:0'):
 
-        os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
-        os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
+        # os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
+        # os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
+        os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
         #tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
         _train(s_data1,s_data2, s_out, nuc,bestwight ,samplesize , epoch_num)
 
-def _train(s_data1,s_data2,, s_out, nuc,bestwight ,samplesize , epoch_num):
+def _train(s_data1,s_data2, s_out, nuc,bestwight ,samplesize , epoch_num):
 
     if not os.path.exists(s_out + '/' + nuc):
         os.makedirs(s_out + '/' + nuc)
@@ -174,7 +176,7 @@ def _train(s_data1,s_data2,, s_out, nuc,bestwight ,samplesize , epoch_num):
       print("no pq for",pqpath)
       return
 
-    num_classes_org = 4079
+    num_classes_org = 4078
     num_classes = 255
     shape1 = (None, DATA_LENGTH, 1)
     optimizer = SGD(lr=5e-5, decay=0.00005)
@@ -189,7 +191,8 @@ def _train(s_data1,s_data2,, s_out, nuc,bestwight ,samplesize , epoch_num):
         else:
             layer.trainable = False
 
-    flat = GlobalAveragePooling1D()(model.layers[-11].output)
+    #flat = GlobalAveragePooling1D()(model.layers[-11].output)
+    flat = model.layers[-11].output
     model_t = Model(inputs=model.input, outputs=flat)
     model_r = Network(inputs=model_t.input,
                       outputs=flat,
@@ -210,11 +213,12 @@ def _train(s_data1,s_data2,, s_out, nuc,bestwight ,samplesize , epoch_num):
     x_target, test_x, train_yo, test_yo, num_classes = prepData(s_data1,samplesize, nuc)
 
     ref_samples = np.arange(x_ref.shape[0])
+    print(ref_samples)
 
     loss, loss_c = [], []
     epochs = []
     print("training...")
-
+    epoch_num = 3
     for epochnumber in range(epoch_num):
 
         x_r, y_r, lc, ld = [], [], [], []
@@ -223,8 +227,12 @@ def _train(s_data1,s_data2,, s_out, nuc,bestwight ,samplesize , epoch_num):
         np.random.shuffle(ref_samples)
 
         for i in range(len(x_target)):
-            x_r.append(x_ref[ref_samples[i]])
-            y_r.append(y_ref[ref_samples[i]])
+            try:
+                x_r.append(x_ref[ref_samples[i]])
+                y_r.append(y_ref[ref_samples[i]])
+            except IndexError:
+                print('Index Error')
+
         x_r = np.array(x_r)
         y_r = np.array(y_r)
 
@@ -271,9 +279,10 @@ import sys
 if __name__ == '__main__':
 
     #train(sys.argv[2], sys.argv[3], sys.argv[1], 10)
-    s_out = "/data/nanopore/IVT/weight/"
-    bestwight = s_out + "/weightwn_keras_dec2.hdf"
-    epoch_num = 5
+    #s_out = "/data/nanopore/IVT/weight/"
+    s_out = "/data/nanopore/IVT/weight_dec/"
+    bestwight = s_out + "weightwn_keras_dec2.hdf"
+    epoch_num = 3
     #train(sys.argv[2], sys.argv[3], sys.argv[1], 10)
 
 
@@ -282,10 +291,24 @@ if __name__ == '__main__':
     for n1, n2, n3, n4, n5 ,n6 in itertools.product(nucs, nucs, nucs, nucs, nucs, nucs):
 
         s_data1 = "/data/nanopore/nanoDoc2_1/10000signal"
-        s_data2 = "/data/nanopore/nanoDoc2_1/100signal"
+        s_data2 = "/data/nanopore/nanoDoc2_1/50signal"
         s_out = "/data/nanopore/nanoDoc2_1/weight/docweight"
         nuc = n1+n2+n3+n4+n5+n6
-        epoch_num = 5
-        samplesize = 10000
+        dir = s_out+"/"+nuc
+        if n1 == 'A':
+            continue
+        if n1 == 'T':
+            continue
+        if n1 == 'C':
+            continue
+        if n2 == 'A':
+            continue
+        if n2 == 'T':
+            continue
+        if os.path.exists(dir):
+            continue
+
+        epoch_num = 3
+        samplesize = 12750
         train(s_data1,s_data2, s_out, nuc, bestwight, samplesize, epoch_num)
         cnt+=1

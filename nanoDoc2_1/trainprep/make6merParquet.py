@@ -34,7 +34,7 @@ import sys
 import random
 import mappy as mp
 
-def makeSamplePlan(refs,pqs,output_file,takeCnt):
+def makeSamplePlan(refs,pqs,output_file,takeCnt,join):
 
     fivemerDict={}
     recordL=[]
@@ -135,6 +135,16 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
     print(len(keys))
     dataf = []
     keyidx = 0
+
+    pschema = schema(
+        [
+            ('flg', uint32()),
+            ('fmer', string()),
+            ('trace', list_(uint16())),
+            ('signal', list_(float32()))
+        ]
+    )
+
     for key in keys:
 
         (tracel, signall) = datadict[key]
@@ -153,19 +163,10 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
             keyidx += 1
 
 
-    pschema = schema(
-        [
-            ('flg', uint32()),
-            ('fmer', string()),
-            ('trace', list_(uint16())),
-            ('signal', list_(float32()))
-        ]
-    )
+
     df = pd.DataFrame(dataf,
                       columns=['flg','fmer','trace','signal'])
     pd.set_option('display.max_rows', None)
-
-
     pyarrow_table = Table.from_pandas(df, pschema)
     pq.write_table(
         pyarrow_table,
