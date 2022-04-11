@@ -378,14 +378,7 @@ class PqReader:
         if self.firstloadpos == 0:
             self.firstloadpos = pos
         self.lastloadpos = pos
-        # get readid to reads for bin interval batch
-        # need to buffer from equally from interval
-        # middle = (start+end) // 2
-        # l = list(range(start+1,middle))
-        # l2 = list(range(middle,end-1))
-        # ll = [middle,end,start]
-        # ll.extend(l)
-        # ll.extend(l2)
+
 
         for pos2 in range(start,end):
 
@@ -394,6 +387,8 @@ class PqReader:
                 readsIndex = addIndex
             elif addIndex is not None:
                 readsIndex = pd.concat([readsIndex, addIndex])
+        if readsIndex is None:
+            return None
 
         #print("start reading file")
         # read data with row signal
@@ -503,15 +498,16 @@ class PqReader:
         rel0 = pos - _start - margin
         rel = self.correctCigar(rel0,cigar)
         start = rel
-        startandendmargin = 8
-        if start < startandendmargin:
+        startmargin = 8
+        endmargin = 10
+        if start < startmargin:
             # do not use lower end
             return None
 
         rel = pos - _start + 7 +  margin
         end = self.correctCigar(rel, cigar)
         #do not take last 5
-        if end >= traceintervalLen-startandendmargin:
+        if end >= traceintervalLen-endmargin:
             #end = traceintervalLen-1
             return None
         if self.IndelStrict:

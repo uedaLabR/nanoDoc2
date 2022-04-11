@@ -240,10 +240,17 @@ def eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile,
         fw.flush()
         return (0, 0)
 
-    # target signal
-    rtraces, rawdatas, cnt = targetpr.getRowData(chromtgt, strand, n, uplimit)
-    # reference signal
-    retraces,refdatas, cntref = refpr.getRowData(chrom, strand, n, cnt)
+    try:
+        # target signal
+        rtraces, rawdatas, cnt = targetpr.getRowData(chromtgt, strand, n, uplimit)
+        # reference signal
+        retraces,refdatas, cntref = refpr.getRowData(chrom, strand, n, cnt)
+    except:
+        infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n, str(subs), 0, 0,  0)
+        print(infos)
+        fw.writelines(infos + "\n")
+        fw.flush()
+        return (0,0)
 
     #    reference start or end, or nodepth
     if (cnt < 5 or cntref < 5 or (rawdatas is None) or (refdatas is None)):

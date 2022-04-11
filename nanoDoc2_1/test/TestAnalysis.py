@@ -24,24 +24,15 @@ if __name__ == '__main__':
     refpq = "/data/nanopore/nanoDoc2_1/1623_ivt"
     targetpq = "/data/nanopore/nanoDoc2_1/1623_wt"
     out = "/data/nanopore/nanoDoc2_1/16S_test.txt"
-    #out = "/data/nanopore/nanoDoc2_1/23S_test.txt"
+
     chrom = "NC_000913.3"
     chromtgt = "NC_000913.3"
-    # start = 4035531
-    # end = start+1541
     start = 4035531
     end = 4037072
     strand = "+"
 
-    #    if len(sys.argv) > 11 :
-    #        minreadlen = int(sys.argv[11])
     chromtgt = chrom
-    minreadlen = 300
-    # # for covid analysis
-    # if "england" in out:
-    #     chromtgt = "hCoV-19/England/02/2020|EPI_ISL_407073"
-    # if "austraria" in out:
-    #     chromtgt = "MT007544.1"
+    minreadlen = 1000
     with tf.device('/CPU:0'):
         # os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
         # os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
