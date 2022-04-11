@@ -339,6 +339,9 @@ if __name__ == '__main__':
     # end = start+1541
     start = 4037519
     end = 4040423
+
+   # start = 4035531
+   # end = start+1541
     strand = "+"
 
     #    modCall(wfile,paramf,ref,refpq,targetpq,out,chrom,start,end)
@@ -353,7 +356,7 @@ if __name__ == '__main__':
     # end = int(sys.argv[9])
     # strand = sys.argv[10]
     #    minreadlen = 700
-    minreadlen = 200
+    minreadlen = 500
     #    if len(sys.argv) > 11 :
     #        minreadlen = int(sys.argv[11])
     chromtgt = chrom
@@ -366,6 +369,5 @@ if __name__ == '__main__':
         # os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
         # os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
         modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, end, strand, minreadlen)
 

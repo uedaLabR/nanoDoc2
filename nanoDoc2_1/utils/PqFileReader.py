@@ -21,8 +21,7 @@ from numba import jit,u1,i8,f8
 
 DATA_LENGTH_UNIT = 8
 SEQ_TAKE_MARGIN = 3
-binsize = 2000
-takemargin = 10
+
 
 @jit
 def decode16bit(a_trace):
@@ -226,6 +225,7 @@ import mappy as mp
 
 class PqReader:
 
+
     def getFilePathList(self,path):
 
         sortedfile = sorted(glob.glob(path + "/*.pq"))
@@ -256,7 +256,12 @@ class PqReader:
         self.maxreads_org = maxreads
         self.bufferData = None
         self.loadchr = None
-
+        self.firstbinsize = 100
+        self.binsize = 2000
+        self.takemarginb4 = 10
+        self.takemargin = 10
+        self.lastloadpos = 0
+        self.firstloadpos = 0
         #make index from parquet meta data
         indexlist = []
         fileidx = 0
@@ -264,17 +269,6 @@ class PqReader:
 
         for file in sortedfile:
 
-            # ('read_id', string()),
-            # ('chr', string()),
-            # ('strand', bool_()),
-            # ('start', uint32()),
-            # ('end', uint32()),
-            # ('cigar', string()),
-            # ('fastq', string()),
-            # ('offset', uint16()),
-            # ('traceintervals', list_(uint16())),
-            # ('trace', list_(uint16())),
-            # ('signal', list_(uint8()))
             parquet_file = pq.ParquetFile(file)
             chrInfo = parquet_file.metadata.row_group(0).column(2).statistics.min
             strandInfo = parquet_file.metadata.row_group(0).column(3).statistics.min
@@ -290,7 +284,7 @@ class PqReader:
     def getDepth(self,chr, pos, strand):
 
         #extract parquet file contain reads in this region
-        query = 'start <= ' + str(pos-takemargin) + ' & end >= ' + str(pos+takemargin) + ' & chr == "' + chr + '" & strand == ' + str(
+        query = 'start <= ' + str(pos-self.takemarginb4) + ' & end >= ' + str(pos+self.takemargin) + ' & chr == "' + chr + '" & strand == ' + str(
             strand) + ''
         pqfiles = self.indexdf.query(query)
         sortedfile = self.getFilePathList(self.path)
@@ -301,8 +295,8 @@ class PqReader:
             filepath = sortedfile[fileidx]
 
             if indexdata is None:
-                indexdata = pq.read_table(filepath, columns=['start', 'end']).to_pandas()
 
+                indexdata = pq.read_table(filepath, columns=['start', 'end']).to_pandas()
 
             else:
                 dataadd = pq.read_table(filepath, columns=['start', 'end']).to_pandas()
@@ -317,7 +311,9 @@ class PqReader:
         if indexes is None:
 
             #print('init read')
-            datainpos = data.query('start <=' + str(pos-takemargin) + ' & end >=' + str(pos+takemargin))
+            if data is None:
+                return None
+            datainpos = data.query('start <=' + str(pos-self.takemarginb4) + ' & end >=' + str(pos+self.takemargin))
             if datainpos is None or len(datainpos) ==0:
                 return None
             if ntake < len(datainpos):
@@ -326,12 +322,12 @@ class PqReader:
 
         else:
 
-            dataposprev = indexes.query('start <=' + str(pos-takemargin) + ' & end >=' + str(pos+takemargin))
+            dataposprev = indexes.query('start <=' + str(pos-self.takemarginb4) + ' & end >=' + str(pos+self.takemargin))
             if len(dataposprev) == ntake:
                 return None
 
             else:
-                datainpos = data.query('start <=' + str(pos-takemargin) + ' & end >=' + str(pos+takemargin))
+                datainpos = data.query('start <=' + str(pos-self.takemarginb4) + ' & end >=' + str(pos+self.takemargin))
                 df_alreadyhave = dataposprev['read_no']
                 datainpos = datainpos[~datainpos.read_no.isin(df_alreadyhave)]
                 cnt = ntake - len(df_alreadyhave)
@@ -343,23 +339,12 @@ class PqReader:
 
 
 
-    # ('read_id', string()),
-    # ('chr', string()),
-    # ('strand', bool_()),
-    # ('start', uint32()),
-    # ('end', uint32()),
-    # ('cigar', string()),
-    # ('fastq', string()),
-    # ('offset', uint16()),
-    # ('traceintervals', list_(uint16())),
-    # ('trace', list_(uint16())),
-    # ('signal', list_(uint8()))
     def load(self,chr, pos, strand):
 
         print("loding data")
         self.loadchr = chr
         #extract parquet file contain reads in this region
-        query = 'start <= ' + str(pos-takemargin) + ' & end >= ' + str(pos+takemargin) + ' & chr == "' + chr + '" & strand == ' + str(
+        query = 'start <= ' + str(pos-self.takemarginb4) + ' & end >= ' + str(pos+self.takemargin) + ' & chr == "' + chr + '" & strand == ' + str(
             strand) + ''
         pqfiles = self.indexdf.query(query)
         #
@@ -383,14 +368,16 @@ class PqReader:
 
         # get reads ids for bufferted position (start,end)
         start = pos
-        end = ((pos // binsize)+1) * binsize
+        end = ((pos // self.binsize)+1) * self.binsize
         if not strand:
-            start = (pos // binsize) * binsize
+            start = (pos // self.binsize) * self.binsize
             end = pos
 
         readsIndex = None
         ntake = self.maxreads
-
+        if self.firstloadpos == 0:
+            self.firstloadpos = pos
+        self.lastloadpos = pos
         # get readid to reads for bin interval batch
         # need to buffer from equally from interval
         # middle = (start+end) // 2
@@ -443,8 +430,12 @@ class PqReader:
         ADDITONAL_MARGIN = 3
         margin = SEQ_TAKE_MARGIN+ADDITONAL_MARGIN
         rseq = self.a.seq(chr,start=(pos-margin),end=(pos+margin))
-
-        if ((self.bufferData is None) or (chr != self.loadchr) or ((pos % binsize) == 0)):
+        rellastload = pos-self.lastloadpos
+        relfirstload = pos-self.firstloadpos
+        firstload = (relfirstload  == 100)
+        loadpos = (rellastload %self.binsize == 0) and rellastload > 0
+        print(relfirstload,rellastload,firstload,loadpos)
+        if ((self.bufferData is None) or (chr != self.loadchr) or firstload or loadpos):
             #print("loading row files",self.bufferData is None, chr != self.loadchr , (pos % binsize) == 0)
             print("load data init")
             self.bufferData = None
@@ -474,7 +465,7 @@ class PqReader:
 
     def getRowSequence(self, chr, strand, pos,takecnt=-1):
 
-        binsizehalf = binsize //2
+        binsizehalf = self.binsize //2
         if ((self.bufferData is None) or (chr != self.loadchr) or ((pos % binsizehalf) == 0)):
             #print("loading row files",self.bufferData is None, chr != self.loadchr , (pos % binsize) == 0)
             self.load(chr, pos, strand)
@@ -512,13 +503,15 @@ class PqReader:
         rel0 = pos - _start - margin
         rel = self.correctCigar(rel0,cigar)
         start = rel
-        if start < 2:
+        startandendmargin = 8
+        if start < startandendmargin:
             # do not use lower end
             return None
 
         rel = pos - _start + 7 +  margin
         end = self.correctCigar(rel, cigar)
-        if end >= traceintervalLen:
+        #do not take last 5
+        if end >= traceintervalLen-startandendmargin:
             #end = traceintervalLen-1
             return None
         if self.IndelStrict:
@@ -598,7 +591,6 @@ class PqReader:
 
             ret = self.getOneRow(row, strand, pos, rseq)
             if ret is not None:
-
 
                 trace,signal  = ret
                 traces.append(trace)
