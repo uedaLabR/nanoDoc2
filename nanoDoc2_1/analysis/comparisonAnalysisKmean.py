@@ -363,7 +363,7 @@ if __name__ == '__main__':
     # end = int(sys.argv[9])
     # strand = sys.argv[10]
     #    minreadlen = 700
-    minreadlen = 500
+    minreadlen = 1000
     #    if len(sys.argv) > 11 :
     #        minreadlen = int(sys.argv[11])
     chromtgt = chrom
