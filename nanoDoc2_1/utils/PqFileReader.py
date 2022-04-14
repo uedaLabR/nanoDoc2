@@ -245,23 +245,30 @@ class PqReader:
 
 
 
-    def __init__(self, path,ref,maxreads = 1000,IndelStrict = False):
+    def __init__(self, path,ref,minreadlen,strand,start,end,margin,maxreads = 1200,IndelStrict = False):
 
         self.IndelStrict = IndelStrict
         self.path = path
         self.batch = None
+        self.strand = strand
         print("ref",ref)
         self.a = mp.Aligner(ref)
         self.maxreads = int(maxreads * 1.2)# take little more sample since some reads disqualify
         self.maxreads_org = maxreads
+        self.minreadlen = minreadlen
         self.bufferData = None
         self.loadchr = None
-        self.firstbinsize = 100
+        self.firstbinsizeList = [30,100,200,400]
         self.binsize = 2000
-        self.takemarginb4 = 10
+        self.samplelen = 2000
+        self.takemarginb4 = 8
         self.takemargin = 10
         self.lastloadpos = 0
         self.firstloadpos = 0
+        self.start = start
+        self.end = end
+        self.margin = margin
+
         #make index from parquet meta data
         indexlist = []
         fileidx = 0
@@ -279,14 +286,24 @@ class PqReader:
 
         self.indexdf = pd.DataFrame(indexlist,
                           columns=['fileidx','chr','strand','start','end'])
-        print(self.indexdf)
+        #print(self.indexdf)
 
     def getDepth(self,chr, pos, strand):
 
         #extract parquet file contain reads in this region
-        query = 'start <= ' + str(pos-self.takemarginb4) + ' & end >= ' + str(pos+self.takemargin) + ' & chr == "' + chr + '" & strand == ' + str(
-            strand) + ''
+        # query = 'start >= ' + str(self.start - self.margin) + ' & start <= ' + str(pos-self.takemargin) + \
+        #         ' & end <= ' + str(self.end + self.margin) + ' & end >= ' + str(pos + self.takemargin) + \
+        #         ' & chr == "' + chr + '" & strand == ' + str(strand) + '' + \
+        #         ' & (end-start) >= ' + str(self.minreadlen)
+        query = 'start <= ' + str(pos-self.takemarginb4) + ' & end >= ' + str(pos+self.takemargin) + \
+                ' & chr == "' + chr + '" & strand == ' + str(strand) + '' + \
+                ' & (end-start) >= ' + str(self.minreadlen)
+
         pqfiles = self.indexdf.query(query)
+        #print("pqfiles")
+        #print(query)
+        #print(pqfiles)
+
         sortedfile = self.getFilePathList(self.path)
         indexdata = None
         for index, row in pqfiles.iterrows():
@@ -314,6 +331,10 @@ class PqReader:
             if data is None:
                 return None
             datainpos = data.query('start <=' + str(pos-self.takemarginb4) + ' & end >=' + str(pos+self.takemargin))
+            if datainpos is not None:
+                datainpos = datainpos.query(
+                    'start >=' + str(self.start - self.margin) + ' & end <=' + str(self.end + self.margin))
+
             if datainpos is None or len(datainpos) ==0:
                 return None
             if ntake < len(datainpos):
@@ -323,11 +344,14 @@ class PqReader:
         else:
 
             dataposprev = indexes.query('start <=' + str(pos-self.takemarginb4) + ' & end >=' + str(pos+self.takemargin))
-            if len(dataposprev) == ntake:
+            if len(dataposprev) <= ntake:
                 return None
 
             else:
                 datainpos = data.query('start <=' + str(pos-self.takemarginb4) + ' & end >=' + str(pos+self.takemargin))
+                if datainpos is not None:
+                    datainpos = datainpos.query(
+                        'start >=' + str(self.start - self.margin) + ' & end <=' + str(self.end + self.margin))
                 df_alreadyhave = dataposprev['read_no']
                 datainpos = datainpos[~datainpos.read_no.isin(df_alreadyhave)]
                 cnt = ntake - len(df_alreadyhave)
@@ -344,12 +368,19 @@ class PqReader:
         print("loding data")
         self.loadchr = chr
         #extract parquet file contain reads in this region
-        query = 'start <= ' + str(pos-self.takemarginb4) + ' & end >= ' + str(pos+self.takemargin) + ' & chr == "' + chr + '" & strand == ' + str(
-            strand) + ''
+        # query = 'start <= ' + str(pos-self.takemarginb4) + ' & end >= ' + str(pos+self.takemargin) + \
+        #         ' & start >= ' + str(self.start - self.margin) + ' & end <= ' + + str(self.end + self.margin) + \
+        #         ' & chr == "' + chr + '" & strand == ' + str(strand) + '' + \
+        #         ' & (end-start) >= ' + str(self.minreadlen)
+        query = 'start <= ' + str(pos-self.takemarginb4) + ' & end >= ' + str(pos+self.takemargin) + \
+                ' & chr == "' + chr + '" & strand == ' + str(strand) + '' + \
+                ' & (end-start) >= ' + str(self.minreadlen)
+
+        #print(self.indexdf)
         pqfiles = self.indexdf.query(query)
         #
         sortedfile = self.getFilePathList(self.path)
-        print(sortedfile)
+        #print(sortedfile)
         #
         indexdata = None
         for index, row in pqfiles.iterrows():
@@ -368,9 +399,9 @@ class PqReader:
 
         # get reads ids for bufferted position (start,end)
         start = pos
-        end = ((pos // self.binsize)+1) * self.binsize
+        end = ((pos // self.samplelen)+1) * self.samplelen
         if not strand:
-            start = (pos // self.binsize) * self.binsize
+            start = (pos // self.samplelen) * self.samplelen
             end = pos
 
         readsIndex = None
@@ -379,13 +410,16 @@ class PqReader:
             self.firstloadpos = pos
         self.lastloadpos = pos
 
-
         for pos2 in range(start,end):
 
             addIndex = self.randomsample(pos2, indexdata, ntake, readsIndex)
+
             if readsIndex is None:
                 readsIndex = addIndex
             elif addIndex is not None:
+                # print("add Index", addIndex)
+                # print("start",addIndex['start'])
+                # print("end",addIndex['end'])
                 readsIndex = pd.concat([readsIndex, addIndex])
         if readsIndex is None:
             return None
@@ -400,6 +434,7 @@ class PqReader:
             readids = readsIndex['read_no']
             filterlist = []
             filterTp = ('read_no', 'in', readids)
+            #print("readid",readids)
             filterlist.append(filterTp)
             columns = ['read_no', 'read_id','chr', 'strand', 'start', 'end', 'cigar','genome','offset', 'traceintervals','trace','signal']
             if dataWithRow is None:
@@ -427,7 +462,11 @@ class PqReader:
         rseq = self.a.seq(chr,start=(pos-margin),end=(pos+margin))
         rellastload = pos-self.lastloadpos
         relfirstload = pos-self.firstloadpos
-        firstload = (relfirstload  == 100)
+        if not strand:
+            rellastload = self.lastloadpos - pos
+            relfirstload = self.firstloadpos - pos
+
+        firstload = (relfirstload in self.firstbinsizeList)
         loadpos = (rellastload %self.binsize == 0) and rellastload > 0
         print(relfirstload,rellastload,firstload,loadpos)
         if ((self.bufferData is None) or (chr != self.loadchr) or firstload or loadpos):

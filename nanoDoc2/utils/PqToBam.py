@@ -149,6 +149,6 @@ from Bio import SeqIO
 if __name__ == "__main__":
 
     ref = "/data/nanopore/reference/NC000913.fa"
-    path = '/data/nanopore/nanoDoc2/1623_native'
-    pathout = "/data/nanopore/nanoDoc2/1623_native.bam"
+    path = '/data/nanopore/nanoDoc2/1623_ivt'
+    pathout = "/data/nanopore/nanoDoc2/1623_ivt.bam"
     toBam(ref,path,pathout)

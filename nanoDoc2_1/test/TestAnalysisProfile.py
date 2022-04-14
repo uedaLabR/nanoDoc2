@@ -1,6 +1,6 @@
 import glob
 from sklearn.model_selection import train_test_split
-
+from cProfile import Profile
 import tensorflow as tf  # add
 import numpy as np
 from tensorflow.keras.layers import GlobalAveragePooling1D
@@ -23,18 +23,26 @@ if __name__ == '__main__':
     ref = "/data/nanopore/reference/NC000913.fa"
     refpq = "/data/nanopore/nanoDoc2_1/1623_ivt"
     targetpq = "/data/nanopore/nanoDoc2_1/1623_wt"
-    out = "/data/nanopore/nanoDoc2_1/16S_test.txt"
+    out = "/data/nanopore/nanoDoc2_1/16S_testP.txt"
 
     chrom = "NC_000913.3"
     chromtgt = "NC_000913.3"
     start = 4035531
-    end = 4037072
+    end = start+50
+
+    # start = 4035570
+    # end = 4035580
     strand = "+"
 
     chromtgt = chrom
-    minreadlen = 1000
+    minreadlen = 500
     with tf.device('/CPU:0'):
         # os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
         # os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+        pr = Profile()
+        pr.enable()
         comparisonAnalysisKmean.modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, end, strand, minreadlen)
+        pr.disable()
+        pr.print_stats()
+

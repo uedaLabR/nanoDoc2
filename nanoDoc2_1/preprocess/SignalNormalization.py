@@ -61,6 +61,8 @@ def theoryMean(fmerDict,lgenome,strand):
         rg = lgenome
         for n in range(0, len(rg) - 5):
             fmer = rg[n:n + 5]
+            if "N" in fmer:
+                fmer = fmer.replace('N', 'A')
             cv = fmerDict[fmer]
             means.append(cv)
 
@@ -71,6 +73,8 @@ def theoryMean(fmerDict,lgenome,strand):
         for n in range(0,len(rg)-5):
 
            fmer = rg[n:n+5]
+           if "N" in fmer:
+               fmer = fmer.replace('N', 'A')
            cv = fmerDict[fmer]
            means.append(cv)
 

@@ -42,7 +42,7 @@ def callMinusStrand(wfile, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, 
     idx = 0
     res = None #faiss.StandardGpuResources()
     strand = "-"
-    while n > start+5:
+    while n > start:
         subs = seq[idx:idx + 6]
         cnt, cntref = eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr,
                                   model_t, fw, chrom,
@@ -57,13 +57,21 @@ def callPlusStrand(wfile, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, t
                    end):
     strand = "+"
     res = None #faiss.StandardGpuResources()
+    #poss = [4035531,4035730,4036668]
+
     for n in range(start, end-6):
         subs = seq[(n - start):(n - start) + 6]
+        # if n not in poss:
+        #     continue
         cnt, cntref = eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr,
                                   model_t, fw, chrom,
                                   chromtgt,res)
 
-
+    # for m in range(10):
+    #     n = 4036668
+    #     cnt, cntref = eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr,
+    #                               model_t, fw, chrom,
+    #                               chromtgt,res)
 
 
 
@@ -208,7 +216,7 @@ def getScoreFromCluster(xref, xrow, niter):
             elif p > 0:
                 score = -1 * math.log10(p) / scorenormalizefactor
             print("ountref,countrow", countref, countrow,score)
-            # print(p, score)
+            #print(p, score)
             if score > maxscore:
                 maxscore = score
 
@@ -288,7 +296,7 @@ def eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile,
     return (cnt, cntref)
 
 
-def modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, end, strand, minreadlen,uplimit = 600):
+def modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, end, strand, minreadlen,uplimit = 1200):
 
 
     if chrom == "":
@@ -339,13 +347,12 @@ if __name__ == '__main__':
     refpq = "/data/nanopore/nanoDoc2_1/1623_ivt"
     targetpq = "/data/nanopore/nanoDoc2_1/1623_wt"
     # out = "/data/nanopore/rRNA/16S_test.txt"
-    out = "/data/nanopore/nanoDoc2_1/23S_test.txt"
+    out = "/data/nanopore/nanoDoc2_1/err_test.txt"
     chrom = "NC_000913.3"
     chromtgt = "NC_000913.3"
-    # start = 4035531
-    # end = start+1541
-    start = 4037519
-    end = 4040423
+
+    start = 4035531
+    end = 4035561
 
    # start = 4035531
    # end = start+1541
@@ -363,7 +370,7 @@ if __name__ == '__main__':
     # end = int(sys.argv[9])
     # strand = sys.argv[10]
     #    minreadlen = 700
-    minreadlen = 100
+    minreadlen = 1000
     #    if len(sys.argv) > 11 :
     #        minreadlen = int(sys.argv[11])
     chromtgt = chrom
@@ -377,4 +384,5 @@ if __name__ == '__main__':
         # os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
         modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, end, strand, minreadlen)
+
 
