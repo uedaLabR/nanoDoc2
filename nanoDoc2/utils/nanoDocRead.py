@@ -23,15 +23,10 @@ class nanoDocRead():
         self.signal = signal[adoptorlen:].astype(np.float64)
         self.normSignal = None
 
-        if strand == 1:
+        self.trace = trace[::-1].astype(np.int16)
+        self.move = move[::-1].astype(np.int16)
+        self.signal = self.signal[::-1]
 
-            self.trace = trace[::-1].astype(np.int16)
-            self.move = move[::-1].astype(np.int16)
-            self.signal = self.signal[::-1]
-
-        else:
-            self.trace = trace.astype(np.int16)
-            self.move = move.astype(np.int16)
 
 
         self.fastq = fastq

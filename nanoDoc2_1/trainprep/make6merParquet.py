@@ -29,12 +29,12 @@ class Counter:
     def getList(self):
         return self.l
 
-from nanoDoc2_1.utils.PqFileReader import PqReader
+from nanoDoc2_1.utils.PqFile6merReader import PqReader
 import sys
 import random
 import mappy as mp
 
-def makeSamplePlan(refs,pqs,output_file,takeCnt,join):
+def makeSamplePlan(refs,pqs,output_file,takeCnt):
 
     fivemerDict={}
     recordL=[]
@@ -44,7 +44,9 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt,join):
 
         a = mp.Aligner(ref)
         records = SeqIO.parse(ref, 'fasta')
-        fr = PqReader(pqs[cnt], ref,1500,IndelStrict=True)
+        #path, ref, minreadlen, strand, maxreads = 500, IndelStrict = False):
+        strand = True
+        fr = PqReader(pqs[cnt], ref,200,strand,IndelStrict=True)
 
         for record in records:
            print(record.name)

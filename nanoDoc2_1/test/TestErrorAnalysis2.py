@@ -14,6 +14,7 @@ DATA_LENGTH = 1024
 from numba import jit,u1,i8,f8
 from nanoDoc2_1.utils.PqFile6merReader import PqReader
 from nanoDoc2_1.network import CnnWavenetDecDimention
+from nanoDoc2.graph.GraphManager import GraphManager
 
 def getModel():
 
@@ -51,18 +52,80 @@ def callMinusStrand(wfile, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, 
         n = n - 1
         idx = idx + 1
 
+@jit
+def decode16bit(a_trace):
+
+    a = (a_trace & 0b1111000000000000) >> 12
+    c = (a_trace & 0b0000111100000000) >> 8
+    g = (a_trace & 0b0000000011110000) >> 4
+    t = (a_trace & 0b0000000000001111)
+    #
+    return (a,c,g,t)
+
+import numpy as np
+def decode(trace):
+
+    tp = list(map(decode16bit, trace))
+    #print(tp)
+    ar = np.array(tp)
+    # a = ar[:, 0]
+    # c = ar[:, 1]
+    # g = ar[:, 2]
+    # t = ar[:, 3]
+    return ar
+
+base_corresponding_table = {0:'A',2:'G',1:'C',3:'T',4:'A-',6:'G-',5:'C-',7:'U-'}
+base_color = {'A':'#228b22','T':'#db7093','G':'#ff8c00','C':'#4169e1','A-':'#228b22','U-':'#db7093','G-':'#ff8c00','C-':'#4169e1'}
+from matplotlib import gridspec
+def plotGraph(traces,signals,infos,path):
+
+    gm = GraphManager(path)
+
+    for n in range(len(signals)):
+
+        fig = plt.figure(figsize=(40, 20))
+        gs = gridspec.GridSpec(2, 1, height_ratios=[0.5,0.5])
+
+        ax1 = fig.add_subplot(gs[0])
+        ax2 = fig.add_subplot(gs[1])
+        ax1.plot(signals[n])
+
+        trace = traces[n]
+        trace = decode(trace)
+        trace = np.array(trace).T
+        #print(trace)
+        info = infos[n]
+        print(info)
+        plt.title(info)
+
+        i = 0
+        for atrace in trace:
+
+            ax2.plot(atrace, color=base_color[base_corresponding_table[i]],linewidth=1)
+            i +=1
+
+        gm.add_figure(fig)
+
+    gm.save()
 
 def callPlusStrand(wfile, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr, model_t, fw, chrom, chromtgt,
                    start,
                    end):
     strand = "+"
+    poss = [4035552,4035545]
     res = None #faiss.StandardGpuResources()
     for n in range(start, end-6):
-        subs = seq[(n - start):(n - start) + 6]
-        cnt, cntref = eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr,
-                                  model_t, fw, chrom,
-                                  chromtgt,res)
 
+        if n in poss:
+
+            subs = seq[(n - start):(n - start) + 6]
+            rtraces, rawdatas, cnt, rinfos, retraces,refdatas, cntref,reinfos\
+                = eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr,
+                                      model_t, fw, chrom,
+                                      chromtgt,res)
+            if n == 4035545:
+                plotGraph(rtraces, rawdatas,rinfos,"/data/nanopore/nanoDoc2_1/test/wt.pdf")
+                plotGraph(retraces,refdatas,reinfos,"/data/nanopore/nanoDoc2_1/test/ref.pdf")
 
 
 
@@ -285,10 +348,10 @@ def eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile,
     print(infos)
     fw.writelines(infos + "\n")
     fw.flush()
-    return (cnt, cntref)
+    return (rtraces, rawdatas, cnt, rinfos, retraces,refdatas, cntref,reinfos)
 
 
-def modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, end, strand, minreadlen,uplimit = 500):
+def modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, end, strand, minreadlen,uplimit = 200):
 
 
     if chrom == "":
@@ -339,31 +402,17 @@ if __name__ == '__main__':
     refpq = "/data/nanopore/nanoDoc2_1/1623_ivt"
     targetpq = "/data/nanopore/nanoDoc2_1/1623_wt"
     # out = "/data/nanopore/rRNA/16S_test.txt"
-    out = "/data/nanopore/nanoDoc2_1/23S_test.txt"
+    out = "/data/nanopore/nanoDoc2_1/error2.txt"
     chrom = "NC_000913.3"
     chromtgt = "NC_000913.3"
-    # start = 4035531
-    # end = start+1541
-    start = 4037519
-    end = 4040423
 
-   # start = 4035531
-   # end = start+1541
+    start = 4035545
+    end = 4035561
+
     strand = "+"
 
-    #    modCall(wfile,paramf,ref,refpq,targetpq,out,chrom,start,end)
-    # wfile = sys.argv[1]
-    # paramf = sys.argv[2]
-    # ref = sys.argv[3]
-    # refpq = sys.argv[4]
-    # targetpq = sys.argv[5]
-    # out = sys.argv[6]
-    # chrom = sys.argv[7]
-    # start = int(sys.argv[8])
-    # end = int(sys.argv[9])
-    # strand = sys.argv[10]
-    #    minreadlen = 700
-    minreadlen = 100
+
+    minreadlen = 200
     #    if len(sys.argv) > 11 :
     #        minreadlen = int(sys.argv[11])
     chromtgt = chrom

@@ -1,5 +1,5 @@
 from nanoDoc2.graph.GraphManager import GraphManager
-from nanoDoc2_1.utils.PqFileReader import PqReader
+from nanoDoc2_1.utils.PqFile6merReader import PqReader
 from matplotlib import pyplot as plt
 from pyarrow import list_, bool_ ,int8,uint8, uint16, uint32, int64, float64, float32, bool_, date32, decimal128, timestamp, string, Table, schema, parquet as pq
 import pandas as pd
@@ -99,8 +99,22 @@ if __name__ == "__main__":
 
     path = '/data/nanopore/nanoDoc2_1/CurlcakeIVT'
     ref = "/data/nanopore/reference/Curlcake.fa"
+
+
+    wfile = "/data/nanopore/nanoDoc2_1/weight/docweight"
+    paramf = "/data/param20.txt"
+    ref = "/data/nanopore/reference/NC000913.fa"
+    refpq = "/data/nanopore/nanoDoc2_1/1623_ivt"
+    targetpq = "/data/nanopore/nanoDoc2_1/1623_wt"
+    out = "/data/nanopore/nanoDoc2_1/error.txt"
+
+    chrom = "NC_000913.3"
+    chromtgt = "NC_000913.3"
+    start = 4035531
+    end = 4035561
+
     #path = '/data/nanopore/nanoDoc2/testSARSCOV2'
-    fr = PqReader(path,ref,4000)
+    fr = PqReader(targetpq,ref,True,50)
     # load or build index
 
 
@@ -110,13 +124,13 @@ if __name__ == "__main__":
     #gm = GraphManager(pathout)
     datab =[]
     #depth = fr.getRowData("cc6m_2244_t7_ecorv", True, 2000)
-    pos = 1487
+    pos = start
     a = mp.Aligner(ref)
-    rseq = a.seq("cc6m_2244_t7_ecorv",start=pos,end=pos+6)
+    rseq = a.seq(chrom,start=pos,end=pos+6)
     print(rseq)
 
 
-    traces,signals,sampledlen = fr.getRowData("cc6m_2244_t7_ecorv", True, pos, takecnt=50)
+    traces,signals,sampledlen = fr.getRowData(chrom, True, pos, takecnt=50)
     # print(len(untrimtraces))
     # print(len(untrimsignals))
     plotGraph(traces,signals)

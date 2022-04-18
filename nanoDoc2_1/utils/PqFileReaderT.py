@@ -258,7 +258,7 @@ class PqReader:
         self.minreadlen = minreadlen
         self.bufferData = None
         self.loadchr = None
-        self.firstbinsizeList = [15,30,100]
+        self.firstbinsizeList = [30,100,200,400,600]
         self.binsize = (end-start)
         self.samplelen = (end-start)
         self.takemarginb4 = 8
@@ -291,12 +291,19 @@ class PqReader:
 
     def getDepth(self,chr, pos, strand):
 
-
+        #extract parquet file contain reads in this region
+        # query = 'start >= ' + str(self.start - self.margin) + ' & start <= ' + str(pos-self.takemargin) + \
+        #         ' & end <= ' + str(self.end + self.margin) + ' & end >= ' + str(pos + self.takemargin) + \
+        #         ' & chr == "' + chr + '" & strand == ' + str(strand) + '' + \
+        #         ' & (end-start) >= ' + str(self.minreadlen)
         query = 'start <= ' + str(pos-self.takemarginb4) + ' & end >= ' + str(pos+self.takemargin) + \
                 ' & chr == "' + chr + '" & strand == ' + str(strand) + '' + \
                 ' & (end-start) >= ' + str(self.minreadlen)
 
         pqfiles = self.indexdf.query(query)
+        #print("pqfiles")
+        #print(query)
+        #print(pqfiles)
 
         sortedfile = self.getFilePathList(self.path)
         indexdata = None
@@ -313,7 +320,7 @@ class PqReader:
                 dataadd = pq.read_table(filepath, columns=['start', 'end']).to_pandas()
                 indexdata = pd.concat([indexdata, dataadd])
 
-        depth = indexdata.query('start <=' + str(pos-8) + ' & end >=' + str(pos+10))['start'].count()
+        depth = indexdata.query('start <=' + str(pos-10) + ' & end >=' + str(pos+10))['start'].count()
         return depth
 
 
@@ -321,30 +328,28 @@ class PqReader:
 
         if indexes is None:
 
+            #print('init read')
             if data is None:
                 return None
-            datainpos = data.query('start <=' + str(pos-self.takemarginb4) + ' & end >=' + str(pos+self.takemargin) +" & (end-start) > 200")
+            datainpos = data.query('start <=' + str(pos-self.takemarginb4) + ' & end >=' + str(pos+self.takemargin))
             if datainpos is not None:
                 datainpos = datainpos.query(
                     'start >=' + str(self.start - self.margin) + ' & end <=' + str(self.end + self.margin))
 
             if datainpos is None or len(datainpos) ==0:
                 return None
-            leno = len(datainpos)
             if ntake < len(datainpos):
                 datainpos = datainpos.sample(n=ntake)
-                print("random sampling 1",pos,leno,ntake)
-
             return datainpos
 
         else:
 
-            dataposprev = indexes.query('start <=' + str(pos-self.takemarginb4) + ' & end >=' + str(pos+self.takemargin)+" & (end-start) > 200")
+            dataposprev = indexes.query('start <=' + str(pos-self.takemarginb4) + ' & end >=' + str(pos+self.takemargin))
             if len(dataposprev) <= ntake:
                 return None
 
             else:
-                datainpos = data.query('start <=' + str(pos-self.takemarginb4) + ' & end >=' + str(pos+self.takemargin)+" & (end-start) > 200")
+                datainpos = data.query('start <=' + str(pos-self.takemarginb4) + ' & end >=' + str(pos+self.takemargin))
                 if datainpos is not None:
                     datainpos = datainpos.query(
                         'start >=' + str(self.start - self.margin) + ' & end <=' + str(self.end + self.margin))
@@ -353,7 +358,6 @@ class PqReader:
                 cnt = ntake - len(df_alreadyhave)
                 if (cnt > 0) and (cnt <= len(datainpos)):
                     datainpos = datainpos.sample(n=cnt)
-                    print("randomsampling2",pos, len(datainpos), cnt)
                     return datainpos
 
                 return None
@@ -413,17 +417,17 @@ class PqReader:
         for pos2 in range(start,end):
 
             addIndex = self.randomsample(pos2, indexdata, ntake, readsIndex)
-            print("addIndex")
-            print("addidx",pos2,addIndex)
+            #print(addIndex)
             if readsIndex is None:
                 readsIndex = addIndex
             elif addIndex is not None:
                 readsIndex = pd.concat([readsIndex, addIndex])
-
-
         if readsIndex is None:
             return None
-
+        print("read Idx")
+        print(readsIndex)
+        #print("start reading file")
+        # read data with row signal
         fileindexes = readsIndex['fileidx'].unique()
         print(fileindexes)
         dataWithRow = None
@@ -514,10 +518,7 @@ class PqReader:
         relpos = 0
         for cigaroprator, cigarlen in a.cigar:
 
-            if cigaroprator == 3:
-                refpos = refpos + cigarlen
-
-            elif cigaroprator == 0:  # match
+            if cigaroprator == 0:  # match
 
                 if refpos + cigarlen > targetPos:
                     return relpos + (targetPos - refpos)
@@ -527,7 +528,8 @@ class PqReader:
 
             elif cigaroprator == 2:  # Del
                 refpos = refpos + cigarlen
-            elif cigaroprator == 1 or cigaroprator == 4:  # Ins or N or S
+
+            elif cigaroprator == 1 or cigaroprator == 3 or cigaroprator == 4:  # Ins or N or S
 
                 if relpos == 0:
                     if targetPos <= cigarlen:
@@ -536,7 +538,43 @@ class PqReader:
 
         return 0
 
+
     def getRelativePos(self,strand,_start,end,cigar,pos,traceintervalLen):
+
+        if strand:
+            return self.getRelativePosPStrand(strand, _start, end, cigar, pos, traceintervalLen)
+        else:
+            return self.getRelativePosNStrand(strand, _start, end, cigar, pos, traceintervalLen)
+
+    def getRelativePosNStrand(self, strand, _start, end, cigar, pos, traceintervalLen):
+
+        # tp = (strand,start,end,cigar,pos,traceintervalLen)
+        margin = 1
+        rel0 = end - pos
+        rel = self.correctCigar(rel0, cigar)
+        start = rel
+        startmargin = 8
+        endmargin = 10
+        if start < startmargin:
+            # do not use lower end
+            return None
+
+        rel = end - pos + 7
+        end = self.correctCigar(rel, cigar)
+        # do not take last 5
+        if end >= traceintervalLen - endmargin:
+            # end = traceintervalLen-1
+            return None
+        if self.IndelStrict:
+            expectedlen = 9
+            if abs((end - start) - expectedlen) > 0:  # Do not use cross Indel
+                # print((end-start))
+                return None
+
+        print("start end",cigar,pos,start,end)
+        return start, end
+
+    def getRelativePosPStrand(self, strand, _start, end, cigar, pos, traceintervalLen):
 
         #tp = (strand,start,end,cigar,pos,traceintervalLen)
         margin = 1
@@ -571,17 +609,13 @@ class PqReader:
         rp = self.getRelativePos(strand,start,end,cigar,pos,len(traceintervals))
         if rp is None:
             return None
-        #print("offset", offset)
         relativeStart, relativeEnd = rp
-        # print("relativeStart, relativeEnd",relativeStart, relativeEnd)
-        # print(traceintervals)
         if relativeEnd >= len(traceintervals) or relativeStart >= len(traceintervals):
             return None
-        #tracestart = traceintervals[relativeStart]
-        #traceend = traceintervals[relativeEnd]
-        #print(traceintervals)
-        #print("sig_start,sig_end",traceintervals[relativeStart],traceintervals[relativeEnd])
+
+        print(strand,start,end,cigar,relativeStart,relativeEnd)
         return traceintervals[relativeStart:relativeEnd]
+
 
 
     def getOneRow(self,row,strand, pos,rseq):
@@ -601,11 +635,12 @@ class PqReader:
         if sted is None:
             return None
         traceItv = sted
-        #print(traceItv,sig_start, sig_end)
+        print(traceItv,strand)
         if len(traceItv) < 2:
             return None
         SignalUNIT = 10
-        #print(traceItv)
+        print("traceItv")
+
         tracestart = traceItv[0]
         traceend = traceItv[-1]
         trace_t = trace[tracestart:traceend]
@@ -644,4 +679,5 @@ class PqReader:
         # data = np.array(data)
         # data = data / 256
         return  traces,signals,takecnt
+
 

@@ -245,7 +245,7 @@ class PqReader:
 
 
 
-    def __init__(self, path,ref,minreadlen,strand,start,end,margin,maxreads = 1200,IndelStrict = False):
+    def __init__(self, path,ref,minreadlen,strand,maxreads = 500,IndelStrict = False):
 
         self.IndelStrict = IndelStrict
         self.path = path
@@ -259,15 +259,12 @@ class PqReader:
         self.bufferData = None
         self.loadchr = None
         self.firstbinsizeList = [15,30,100]
-        self.binsize = (end-start)
-        self.samplelen = (end-start)
         self.takemarginb4 = 8
         self.takemargin = 10
         self.lastloadpos = 0
         self.firstloadpos = 0
-        self.start = start
-        self.end = end
-        self.margin = margin
+        self.binsize = 3000
+        self.samplelen = 3000
 
         #make index from parquet meta data
         indexlist = []
@@ -313,7 +310,7 @@ class PqReader:
                 dataadd = pq.read_table(filepath, columns=['start', 'end']).to_pandas()
                 indexdata = pd.concat([indexdata, dataadd])
 
-        depth = indexdata.query('start <=' + str(pos-8) + ' & end >=' + str(pos+10))['start'].count()
+        depth = indexdata.query('start <=' + str(pos-10) + ' & end >=' + str(pos+10))['start'].count()
         return depth
 
 
@@ -321,12 +318,10 @@ class PqReader:
 
         if indexes is None:
 
+            #print('init read')
             if data is None:
                 return None
-            datainpos = data.query('start <=' + str(pos-self.takemarginb4) + ' & end >=' + str(pos+self.takemargin) +" & (end-start) > 200")
-            if datainpos is not None:
-                datainpos = datainpos.query(
-                    'start >=' + str(self.start - self.margin) + ' & end <=' + str(self.end + self.margin))
+            datainpos = data.query('start <=' + str(pos-self.takemarginb4) + ' & end >=' + str(pos+self.takemargin) +" & (end-start) > "+str(self.minreadlen))
 
             if datainpos is None or len(datainpos) ==0:
                 return None
@@ -339,21 +334,18 @@ class PqReader:
 
         else:
 
-            dataposprev = indexes.query('start <=' + str(pos-self.takemarginb4) + ' & end >=' + str(pos+self.takemargin)+" & (end-start) > 200")
+            dataposprev = indexes.query('start <=' + str(pos-self.takemarginb4) + ' & end >=' + str(pos+self.takemargin)+" & (end-start) > "+str(self.minreadlen))
             if len(dataposprev) <= ntake:
                 return None
 
             else:
-                datainpos = data.query('start <=' + str(pos-self.takemarginb4) + ' & end >=' + str(pos+self.takemargin)+" & (end-start) > 200")
-                if datainpos is not None:
-                    datainpos = datainpos.query(
-                        'start >=' + str(self.start - self.margin) + ' & end <=' + str(self.end + self.margin))
+                datainpos = data.query('start <=' + str(pos-self.takemarginb4) + ' & end >=' + str(pos+self.takemargin)+" & (end-start) > "+str(self.minreadlen))
+
                 df_alreadyhave = dataposprev['read_no']
                 datainpos = datainpos[~datainpos.read_no.isin(df_alreadyhave)]
                 cnt = ntake - len(df_alreadyhave)
                 if (cnt > 0) and (cnt <= len(datainpos)):
                     datainpos = datainpos.sample(n=cnt)
-                    print("randomsampling2",pos, len(datainpos), cnt)
                     return datainpos
 
                 return None
@@ -364,17 +356,13 @@ class PqReader:
 
         print("loding data")
         self.loadchr = chr
-        #extract parquet file contain reads in this region
-        # query = 'start <= ' + str(pos-self.takemarginb4) + ' & end >= ' + str(pos+self.takemargin) + \
-        #         ' & start >= ' + str(self.start - self.margin) + ' & end <= ' + + str(self.end + self.margin) + \
-        #         ' & chr == "' + chr + '" & strand == ' + str(strand) + '' + \
-        #         ' & (end-start) >= ' + str(self.minreadlen)
+
         query = 'start <= ' + str(pos-self.takemarginb4) + ' & end >= ' + str(pos+self.takemargin) + \
                 ' & chr == "' + chr + '" & strand == ' + str(strand) + '' + \
                 ' & (end-start) >= ' + str(self.minreadlen)
 
-        #print(query)
-        #print(self.indexdf)
+        print(query)
+        print(self.indexdf)
         pqfiles = self.indexdf.query(query)
         #
         sortedfile = self.getFilePathList(self.path)
@@ -408,33 +396,31 @@ class PqReader:
             self.firstloadpos = pos
         self.lastloadpos = pos
 
-        print("start-end",start,end)
-        #print(indexdata)
+
         for pos2 in range(start,end):
 
             addIndex = self.randomsample(pos2, indexdata, ntake, readsIndex)
-            print("addIndex")
-            print("addidx",pos2,addIndex)
             if readsIndex is None:
                 readsIndex = addIndex
             elif addIndex is not None:
+
+                print("addIndex")
+                print(pos2, addIndex)
                 readsIndex = pd.concat([readsIndex, addIndex])
 
 
         if readsIndex is None:
             return None
 
+        # read data with row signal
         fileindexes = readsIndex['fileidx'].unique()
-        print(fileindexes)
         dataWithRow = None
         for findex in fileindexes:
 
-            print("reading",findex)
             filepath = sortedfile[findex]
             readids = readsIndex['read_no']
             filterlist = []
             filterTp = ('read_no', 'in', readids)
-            #print("readid",readids)
             filterlist.append(filterTp)
             columns = ['read_no', 'read_id','chr', 'strand', 'start', 'end', 'cigar','genome','offset', 'traceintervals','trace','signal']
             if dataWithRow is None:
@@ -469,12 +455,10 @@ class PqReader:
         loadpos = (rellastload %self.binsize == 0) and rellastload > 0
         print(relfirstload,rellastload,firstload,loadpos)
         if ((self.bufferData is None) or (chr != self.loadchr) or firstload or loadpos):
-            #print("loading row files",self.bufferData is None, chr != self.loadchr , (pos % binsize) == 0)
-            print("load data init")
             self.bufferData = None
             self.load(chr, pos, strand)
-        print("finish loading data")
-        traces,signals,sampledlen = self.getFormattedData(strand, pos,rseq,takecnt)
+
+        traces,signals,sampledlen,infos = self.getFormattedData(strand, pos,rseq,takecnt)
         if sampledlen > self.maxreads_org:
             sampledlen = self.maxreads_org
             signals = signals[0:self.maxreads_org]
@@ -485,22 +469,21 @@ class PqReader:
                 #load and sample again since not enough sampling for this region
                 print("load data",depth,sampledlen,takecnt)
                 self.load(chr, pos, strand)
-                traces,signals,sampledlen = self.getFormattedData(strand, pos,rseq, takecnt)
+                traces,signals,sampledlen,infos = self.getFormattedData(strand, pos,rseq, takecnt)
 
         if takecnt == -1:
             depth = self.getDepth(chr, pos, strand)
             if sampledlen < depth:
                 self.load(chr, pos, strand)
-                traces,signals,sampledlen = self.getFormattedData(strand, pos,rseq, takecnt)
+                traces,signals,sampledlen,infos = self.getFormattedData(strand, pos,rseq, takecnt)
 
-        return traces,signals,sampledlen
+        return traces,signals,sampledlen,infos
 
 
     def getRowSequence(self, chr, strand, pos,takecnt=-1):
 
         binsizehalf = self.binsize //2
         if ((self.bufferData is None) or (chr != self.loadchr) or ((pos % binsizehalf) == 0)):
-            #print("loading row files",self.bufferData is None, chr != self.loadchr , (pos % binsize) == 0)
             self.load(chr, pos, strand)
 
         return self.bufferData.iterrows()
@@ -515,6 +498,7 @@ class PqReader:
         for cigaroprator, cigarlen in a.cigar:
 
             if cigaroprator == 3:
+
                 refpos = refpos + cigarlen
 
             elif cigaroprator == 0:  # match
@@ -526,12 +510,15 @@ class PqReader:
                 refpos = refpos + cigarlen
 
             elif cigaroprator == 2:  # Del
+
                 refpos = refpos + cigarlen
+
             elif cigaroprator == 1 or cigaroprator == 4:  # Ins or N or S
 
                 if relpos == 0:
                     if targetPos <= cigarlen:
                         return 0
+
                 relpos = relpos + cigarlen
 
         return 0
@@ -573,14 +560,8 @@ class PqReader:
             return None
         #print("offset", offset)
         relativeStart, relativeEnd = rp
-        # print("relativeStart, relativeEnd",relativeStart, relativeEnd)
-        # print(traceintervals)
         if relativeEnd >= len(traceintervals) or relativeStart >= len(traceintervals):
             return None
-        #tracestart = traceintervals[relativeStart]
-        #traceend = traceintervals[relativeEnd]
-        #print(traceintervals)
-        #print("sig_start,sig_end",traceintervals[relativeStart],traceintervals[relativeEnd])
         return traceintervals[relativeStart:relativeEnd]
 
 
@@ -615,10 +596,9 @@ class PqReader:
         ret = binned(trace_t,traceItv,DATA_LENGTH_UNIT,rseq,signal_t)
         if ret is None:
             return None
-
+        info = chr+":"+str(start)+"-"+str(end)+" "+cigar
         bintrace,binsignal = ret
-        #print("signal trace",len(signal),trace.shape)
-        return bintrace,binsignal
+        return bintrace,binsignal,info
 
     def getFormattedData(self, strand, pos,rseq,_takecnt):
 
@@ -626,6 +606,7 @@ class PqReader:
         untrimtraces = []
         signals = []
         traces = []
+        infos = []
         ids = []
         takecnt = 0
         for index, row in self.bufferData.iterrows():
@@ -633,15 +614,15 @@ class PqReader:
             ret = self.getOneRow(row, strand, pos, rseq)
             if ret is not None:
 
-                trace,signal  = ret
+                trace,signal,info  = ret
                 traces.append(trace)
                 signals.append(signal)
+                infos.append(info)
+
                 takecnt = takecnt + 1
                 #print("takecnt",takecnt,_takecnt)
                 if _takecnt > 0 and takecnt == _takecnt:
                     break
 
-        # data = np.array(data)
-        # data = data / 256
-        return  traces,signals,takecnt
+        return  traces,signals,takecnt,infos
 
