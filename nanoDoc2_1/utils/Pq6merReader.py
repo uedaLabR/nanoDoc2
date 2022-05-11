@@ -368,7 +368,6 @@ class PqReader:
                 ' & chr == "' + chr + '" & strand == ' + str(strand) + '' + \
                 ' & (end-start) >= ' + str(self.minreadlen)
 
-        print(query)
         print(self.indexdf)
         pqfiles = self.indexdf.query(query)
         #
@@ -415,8 +414,6 @@ class PqReader:
                 readsIndex = addIndex
             elif addIndex is not None:
 
-                print("addIndex")
-                print(pos2, addIndex)
                 readsIndex = pd.concat([readsIndex, addIndex])
 
 

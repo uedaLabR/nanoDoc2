@@ -1,5 +1,5 @@
 from nanoDoc2.graph.GraphManager import GraphManager
-from nanoDoc2_1.utils.PqFileReaderT import PqReader
+from nanoDoc2_1.utils.PqFile6merReader import PqReader
 from matplotlib import pyplot as plt
 from pyarrow import list_, bool_ ,int8,uint8, uint16, uint32, int64, float64, float32, bool_, date32, decimal128, timestamp, string, Table, schema, parquet as pq
 import pandas as pd
@@ -38,14 +38,15 @@ def decode(trace):
 base_corresponding_table = {0:'A',2:'G',1:'C',3:'T',4:'A-',6:'G-',5:'C-',7:'U-'}
 base_color = {'A':'#228b22','T':'#db7093','G':'#ff8c00','C':'#4169e1','A-':'#228b22','U-':'#db7093','G-':'#ff8c00','C-':'#4169e1'}
 from matplotlib import gridspec
-def plotGraph(traces,signals,rseq):
+def plotGraph(traces,signals,rseq,infos,fp):
 
-    gm = GraphManager("/data/nanopore/nanoDoc2/testSignalTrace2.pdf")
+    gm = GraphManager(fp)
 
     for n in range(len(signals)):
 
         fig = plt.figure(figsize=(40, 20))
-
+        info = infos[n]
+        plt.title(info + " " + str(rseq))
         gs = gridspec.GridSpec(2, 1, height_ratios=[0.5,0.5])
         ax1 = fig.add_subplot(gs[0])
         ax2 = fig.add_subplot(gs[1])
@@ -70,32 +71,55 @@ def plotGraph(traces,signals,rseq):
 import mappy as mp
 if __name__ == "__main__":
 
-    ref = "/data/nanopore/reference/Yeast_sk1.fa"
-    refpq = "/data/nanopore/nanoDoc2_1/1825_ivt"
-    out = "/data/nanopore/nanoDoc2_1/18S_test.txt"
-    #path = '/data/nanopore/nanoDoc2/testSARSCOV2'
-    margin = 1000
+    # ref = "/data/nanopore/reference/Yeast_sk1.fa"
+    # refpq = "/data/nanopore/nanoDoc2_1/1825_native"
+    # out = "/data/nanopore/nanoDoc2_1/18S_test.txt"
+    # #path = '/data/nanopore/nanoDoc2/testSARSCOV2'
+    # #margin = 1000
+    # minreadlen = 10
+    # strand = False
+    # chrom = "chr12"
+    # chromtgt = "chr12"
+    # start = 455938
+    # end = 457732
+
+    start = 451786
+    end = 455181
+
+    wfile = "/data/nanopore/nanoDoc2_1/weight/docweight"
+    paramf = "/data/param20.txt"
+    ref = "/data/nanopore/reference/NC000913.fa"
+    refpq = "/data/nanopore/nanoDoc2_1/1623_ivt"
+    targetpq = "/data/nanopore/nanoDoc2_1/1623_wt"
+    out = "/data/nanopore/nanoDoc2_1/error.txt"
+
+    chrom = "NC_000913.3"
+    chromtgt = "NC_000913.3"
     minreadlen = 200
-    strand = "-"
-    chrom = "chr12"
-    chromtgt = "chr12"
-    start = 455938
-    end = 457732
-    refpr = PqReader(refpq, ref,minreadlen,strand,start,end,margin,IndelStrict=True) # Assume
+    strand = True
+
+    start = 4035570
+    end = 4035580
+
+    refpr = PqReader(refpq, ref,minreadlen,strand,start,end,IndelStrict=True) # Assume
 
     a = mp.Aligner(ref)
-    pos = 455938
-    rseq = a.seq("chr12", start=pos, end=pos + 6)
-    rseq = mp.revcomp(rseq)
-    print(rseq)
+    poss = [4035575+1249,4035575+1270,4035575+1290]
+    # = range(start,end)
+    for pos in poss:
+        rseq = a.seq(chrom, start=pos-6, end=pos)
+        rseq = mp.revcomp(rseq)
+        print(rseq)
+        # depth = refpr.getDepth(chrom,pos,strand)
+        # print(pos,depth,rseq)
 
-    # load or build index
-    traces, signals, sampledlen = refpr.getRowData("chr12", False, 455958,takecnt=10)
-    # print(traces)
-    # print(signals)
-    print(sampledlen)
+        # load or build index
+        traces, signals, sampledlen,infos = refpr.getRowData(chrom, True, pos,takecnt=100)
+        # print(traces)
+        # print(signals)
 
+        print(sampledlen)
 
-
-    plotGraph(traces, signals,rseq)
+        fp = "/data/nanopore/nanoDoc2_1/figs/testSignalTraceminus"+str(pos)+".pdf"
+        plotGraph(traces, signals,rseq,infos,fp)
 

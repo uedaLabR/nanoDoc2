@@ -20,29 +20,25 @@ if __name__ == '__main__':
 
     wfile = "/data/nanopore/nanoDoc2_1/weight/docweight"
     paramf = "/data/param20.txt"
-    # ref = "/data/nanopore/reference/NC000913.fa"
-    # refpq = "/data/nanopore/nanoDoc2_1/1623_ivt"
-    # targetpq = "/data/nanopore/nanoDoc2_1/1623_wt"
-    # out = "/data/nanopore/nanoDoc2_1/16S_score.txt"
-    #
-    # chrom = "NC_000913.3"
-    # chromtgt = "NC_000913.3"
-    # start = 4035531
-    # end = 4037072
+    # ref = "/data/nanopore/reference/S288C_reference_sequence_R1-1-1_19960731.fa"
+    # ref = "/data/nanopore/reference/Yeast_sk1.fa"
+    ref = "/data/nanopore/nanoDoc2_1/testrun/yeastrRNA.fa"
+    refpq = "/data/nanopore/nanoDoc2_1/testrun/1825_ivt"
+    targetpq = "/data/nanopore/nanoDoc2_1/testrun/1825_native"
+    out = "/data/nanopore/nanoDoc2_1/testrun/25S_score.txt"
 
-    ref = "/data/nanopore/nanoDoc2_1/testrun/ecolirRNA.fa"
-    refpq = "/data/nanopore/nanoDoc2_1/testrun/1623_ivt"
-    targetpq = "/data/nanopore/nanoDoc2_1/testrun/1623_native"
-    out = "/data/nanopore/nanoDoc2_1/testrun/16S_score.txt"
-
-    chrom = "ecoli16S"
-    chromtgt = "ecoli16S"
+    chrom = "yeast25S"
+    chromtgt = "yeast25S"
+    # start = 455938
+    # end = 457732
     start = 1
-    end = 1541
+    end = 3395
 
-    # start = 4035570
-    # end = 4035580
+    # start = 460923
+    # end = 464318
+
     strand = "+"
+
 
     chromtgt = chrom
     minreadlen = 200

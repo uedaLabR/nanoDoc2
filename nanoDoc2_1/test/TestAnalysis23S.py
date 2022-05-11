@@ -20,15 +20,25 @@ if __name__ == '__main__':
 
     wfile = "/data/nanopore/nanoDoc2_1/weight/docweight"
     paramf = "/data/param20.txt"
-    ref = "/data/nanopore/reference/NC000913.fa"
-    refpq = "/data/nanopore/nanoDoc2_1/1623_ivt"
-    targetpq = "/data/nanopore/nanoDoc2_1/1623_wt"
-    out = "/data/nanopore/nanoDoc2_1/23S_test.txt"
+    # ref = "/data/nanopore/reference/NC000913.fa"
+    # refpq = "/data/nanopore/nanoDoc2_1/1623_ivt"
+    # targetpq = "/data/nanopore/nanoDoc2_1/1623_wt"
+    # out = "/data/nanopore/nanoDoc2_1/23S_score.txt"
+    #
+    # chrom = "NC_000913.3"
+    # chromtgt = "NC_000913.3"
+    # start = 4037519
+    # end = 4040423
 
-    chrom = "NC_000913.3"
-    chromtgt = "NC_000913.3"
-    start = 4037519
-    end = 4040423
+    ref = "/data/nanopore/nanoDoc2_1/testrun/ecolirRNA.fa"
+    refpq = "/data/nanopore/nanoDoc2_1/testrun/1623_ivt"
+    targetpq = "/data/nanopore/nanoDoc2_1/testrun/1623_native"
+    out = "/data/nanopore/nanoDoc2_1/testrun/23S_score.txt"
+
+    chrom = "ecoli23S"
+    chromtgt = "ecoli23S"
+    start = 1
+    end = 2904
 
     # start = 4035570
     # end = 4035580

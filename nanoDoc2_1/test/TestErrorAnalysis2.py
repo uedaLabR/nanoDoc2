@@ -83,6 +83,10 @@ def plotGraph(traces,signals,infos,path):
 
     for n in range(len(signals)):
 
+        info = infos[n]
+        if "1N" not in info:
+            continue
+
         fig = plt.figure(figsize=(40, 20))
         gs = gridspec.GridSpec(2, 1, height_ratios=[0.5,0.5])
 
@@ -94,7 +98,7 @@ def plotGraph(traces,signals,infos,path):
         trace = decode(trace)
         trace = np.array(trace).T
         #print(trace)
-        info = infos[n]
+
         print(info)
         plt.title(info)
 
@@ -112,7 +116,7 @@ def callPlusStrand(wfile, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, t
                    start,
                    end):
     strand = "+"
-    poss = [4035552,4035545]
+    poss = [4035552,4035546]
     res = None #faiss.StandardGpuResources()
     for n in range(start, end-6):
 
@@ -123,8 +127,10 @@ def callPlusStrand(wfile, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, t
                 = eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr,
                                       model_t, fw, chrom,
                                       chromtgt,res)
-            if n == 4035545:
+            if n == 4035546:
+                print(len(rtraces),cnt)
                 plotGraph(rtraces, rawdatas,rinfos,"/data/nanopore/nanoDoc2_1/test/wt.pdf")
+                print(len(retraces), cntref)
                 plotGraph(retraces,refdatas,reinfos,"/data/nanopore/nanoDoc2_1/test/ref.pdf")
 
 
@@ -363,7 +369,7 @@ def modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, en
         end = len(seq)
 
     coeffA, coeffB, uplimitb, takeparcentile = nanoDocUtils.readParam(paramf)
-    margin = 1000
+
     refpr = PqReader(refpq, ref,minreadlen,strand,IndelStrict=True) # Assume
     targetpr = PqReader(targetpq,ref,minreadlen,strand,IndelStrict=True)
     model_t = getModel()
@@ -408,11 +414,10 @@ if __name__ == '__main__':
 
     start = 4035545
     end = 4035561
-
     strand = "+"
 
 
-    minreadlen = 200
+    minreadlen = 400
     #    if len(sys.argv) > 11 :
     #        minreadlen = int(sys.argv[11])
     chromtgt = chrom

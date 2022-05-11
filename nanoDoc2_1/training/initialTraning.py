@@ -130,7 +130,7 @@ def _main(s_data, s_out):
     history = model.fit(train_x, train_y, epochs=100, batch_size=batch_size, verbose=1,
               shuffle=True, validation_data=(test_x, test_y),callbacks=[modelCheckpoint])
 
-    historypath ="/data/nanopore/IVT/lealent_log.txt"
+    historypath ="/data/nanopore/nanoDoc2_1/testrun/lealent_log.txt"
     hist_df = pd.DataFrame(history.history)
     hist_df.to_csv(historypath)
 
@@ -139,5 +139,5 @@ if __name__ == '__main__':
 
     #s_data = "/data/nanopore/nanoDoc2/5000each.pq"
     s_data = "/data/nanopore/nanoDoc2_1/1200signal.pq"
-    s_out = "/data/nanopore/IVT/weight/"
+    s_out = "/data/nanopore/nanoDoc2_1/testrun/weight/"
     main(s_data, s_out)

@@ -70,6 +70,7 @@ def toMap(possiblemove):
 
     return posmap
 
+
 def toTraceMap(possiblemove):
 
     posmap = {}
@@ -285,11 +286,24 @@ def getStateProb(statesArray, compactTrace, n, m):
         plusscore = score / float(total)
         minusscore = (float(total)-score) / float(total)
 
-    score = plusscore - minusscore
-    score = weight * score
+        score = plusscore - minusscore
 
-    return score
+        # no minus score for AG mismatch
+        if refbase == 'A' and scG > scA:
+            score = scA / float(total)
+        # no minus score for GA mismatch
+        if refbase == 'G' and scA > scG:
+            score = scG / float(total)
+        # no minus score for CU mismatch
+        if refbase == 'T' or refbase == 'U' and scC > scU:
+            score = scU / float(total)
+        # no minus score for UC mismatch
+        if refbase == 'C' and scU > scC:
+            score = scC / float(total)
+        score = weight * score
+        return score
 
+    return 0
 
 @numba.jit(nopython=True)
 def getTrasProb(compactTrace, m):

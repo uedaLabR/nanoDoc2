@@ -112,26 +112,22 @@ def addPossibleChangePoint(trace, move):
         result = algo_c.predict(pen=penalty_value)
         for idx in result:
             if idx >= len(flipflop): break
-            # b4, after = int(flipflop[idx - 1]), int(flipflop[idx])
-            # diff = abs(b4 - after)
-            # if max(b4, after) > TraceThres and diff > TraceThresDiff:
-            #     # check if order change
             if movec[idx - 1] == 0:
                 movec[idx - 1] = SEGMENT_FROM_CHANGE_POINT
 
     cnt = 1
     density0 = len(movec) // cnt
     lastidx = 0
-    for idx in range(len(movec) - 1):
-
-        if movec[idx] == SEGMENT_FROM_CHANGE_POINT:
-            # clear change point if trace order unchange in small interval
-            if not changeOrder(trace, idx) and (idx - lastidx) < density0:
-                movec[idx] = 0
-
-        if movec[idx] > 0:
-            cnt += 1
-        lastidx = idx
+    # for idx in range(len(movec) - 1):
+    #
+    #     if movec[idx] == SEGMENT_FROM_CHANGE_POINT:
+    #         # clear change point if trace order unchange in small interval
+    #         if not changeOrder(trace, idx) and (idx - lastidx) < density0:
+    #             movec[idx] = 0
+    #
+    #     if movec[idx] > 0:
+    #         cnt += 1
+    #     lastidx = idx
 
     density = len(movec) // cnt
     # devide too long segment
@@ -194,7 +190,7 @@ import numba
 
 TraceThres = 5  # adhoc threshold to restrict change point
 TraceThresDiff = 1  # adhoc threshold to restrict change point
-penalty_value = 100  # beta
+penalty_value = 80  # beta
 
 SEGMENT_FROM_BASECALLER = 1
 SEGMENT_FROM_CHANGE_POINT = 2
@@ -204,8 +200,8 @@ DIOGONAL_MOVE = 1
 HORIZONTAL_MOVE = 2
 SKIP_MOVE_BASE = 10
 
-IndelPenalty = 2
-IndexExtentionpenalty = 0.5
+IndelPenalty = 1.5
+IndexExtentionpenalty = 0.4
 MAXDEL_SIZE = 9
 LOW_THRES_FOR_DEFULT_TRANS_PROP = 0.8
 BONUS_FOR_EACH_SEGMENT = 0.1

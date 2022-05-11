@@ -635,6 +635,7 @@ if __name__ == "__main__":
    print("traceboundary", len(traceboundary),traceboundary)
    print("frombasecaller_idx",len(frombasecaller_idx),frombasecaller_idx)
 
+   print(chrom,r_st,cigar,seq.replace('U', 'T'))
 
    shift,signalmeans,theorymean = predictShift(signalmeans,theorymean)
    scaleshift = calcNormalizeScaleLMS(signalmeans,theorymean)

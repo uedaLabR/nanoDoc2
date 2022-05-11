@@ -98,23 +98,34 @@ import mappy as mp
 if __name__ == "__main__":
 
     path = '/data/nanopore/nanoDoc2_1/CurlcakeIVT'
-    ref = "/data/nanopore/reference/Curlcake.fa"
+    #ref = "/data/nanopore/reference/Curlcake.fa"
 
 
     wfile = "/data/nanopore/nanoDoc2_1/weight/docweight"
     paramf = "/data/param20.txt"
-    ref = "/data/nanopore/reference/NC000913.fa"
-    refpq = "/data/nanopore/nanoDoc2_1/1623_ivt"
-    targetpq = "/data/nanopore/nanoDoc2_1/1623_wt"
+    # ref = "/data/nanopore/reference/NC000913.fa"
+    # refpq = "/data/nanopore/nanoDoc2_1/1623_ivt"
+    # targetpq = "/data/nanopore/nanoDoc2_1/1623_wt"
+
+    targetpq = '/data/nanopore/nanoDoc2_1/testrun2/ecoli'
+    # pathout = '/data/nanopore/nanoDoc2_1/testrun2/ecoli'
+    # #ref = "/data/nanopore/reference/NC000913.fa"
+    ref = "/data/nanopore/nanoDoc2_1/testrun/ecolirRNA.fa"
+
+
     out = "/data/nanopore/nanoDoc2_1/error.txt"
 
-    chrom = "NC_000913.3"
-    chromtgt = "NC_000913.3"
-    start = 4035531
-    end = 4035561
+    # chrom = "NC_000913.3"
+    # chromtgt = "NC_000913.3"
+    start = 1
+    end = 1500
+    chrom = "ecoli16S"
 
     #path = '/data/nanopore/nanoDoc2/testSARSCOV2'
-    fr = PqReader(targetpq,ref,True,50)
+    #fr = PqReader(targetpq,ref,True,50)
+    minreadlen = 200
+    strand = True
+    fr = PqReader(targetpq, ref, minreadlen, strand, start, end, IndelStrict=True)
     # load or build index
 
 
@@ -124,13 +135,13 @@ if __name__ == "__main__":
     #gm = GraphManager(pathout)
     datab =[]
     #depth = fr.getRowData("cc6m_2244_t7_ecorv", True, 2000)
-    pos = start
+    pos = 1100
     a = mp.Aligner(ref)
     rseq = a.seq(chrom,start=pos,end=pos+6)
     print(rseq)
 
 
-    traces,signals,sampledlen = fr.getRowData(chrom, True, pos, takecnt=50)
+    traces,signals,sampledlen,rinfos = fr.getRowData(chrom, True, pos, takecnt=50)
     # print(len(untrimtraces))
     # print(len(untrimsignals))
     plotGraph(traces,signals)

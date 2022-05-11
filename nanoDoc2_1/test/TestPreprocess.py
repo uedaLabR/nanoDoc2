@@ -3,18 +3,20 @@ import nanoDoc2_1.preprocess.fast5ToProcessedPq as fast5ToProcessedPq
 if __name__ == "__main__":
 
     path = '/data/nanopore/IVT/m6aIVT/multifats5_2/workspace'
-    pathout = '/data/nanopore/nanoDoc2_1/CurlcakeIVT'
+    pathout = '/data/nanopore/nanoDoc2_1/varidate/CurlcakeIVT'
     ref = "/data/nanopore/reference/Curlcake.fa"
 
-    path = '/data/nanopore/rRNA/1623_ivt-multi/multifast5_2/workspace'
-    pathout = '/data/nanopore/nanoDoc2_1/1623_ivt'
-    ref = "/data/nanopore/reference/NC000913.fa"
+    # path = '/data/nanopore/rRNA/1623_ivt-multi/multifast5_2/workspacetest'
+    # pathout = '/data/nanopore/nanoDoc2_1/testrun2/ecoli'
+    # #ref = "/data/nanopore/reference/NC000913.fa"
+    # ref = "/data/nanopore/nanoDoc2_1/testrun/ecolirRNA.fa"
     fmercurrent = "/data/nanopore/signalStatRNA180.txt"
 
-    path = '/data/nanopore/rRNA/1825_ivt-multi/multifast5_2/workspace'
-    pathout = '/data/nanopore/nanoDoc2_1/1825_ivt'
-    ref = "/data/nanopore/reference/Yeast_sk1.fa"
-    fmercurrent = "/data/nanopore/signalStatRNA180.txt"
+    # path = '/data/nanopore/rRNA/1825_ivt-multi/multifast5_2/workspace'
+    # pathout = '/data/nanopore/nanoDoc2_1/testrun/1825_ivt'
+    # #ref = "/data/nanopore/reference/Yeast_sk1.fa"
+    # ref = "/data/nanopore/nanoDoc2_1/testrun/yeastrRNA.fa"
+    # fmercurrent = "/data/nanopore/signalStatRNA180.txt"
 
     MAX_CORE = 24
     qvaluethres = 5

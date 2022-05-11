@@ -82,19 +82,12 @@ def viterbi(lgenome,compactTrace,trace,compactTracePositionMap,strand,q_st,q_en,
     for boundary in tracebackPath:
 
         bb = boundary[1]
-        #print(boundary)
         if bb != b4 and didx > 0:
             dl.append(didx)
-
             seq = seq + ru.getBase(trace, b4, bb,strand)
             traceseq.append(ru.getTrace(trace, b4, bb,strand))
-
             traceboundary.append(bb)
 
-            # if strand == True:
-            #
-            # else:
-            #     traceboundary.append(bb-1)
 
         b4 = bb
         didx += 1

@@ -21,16 +21,22 @@ if __name__ == '__main__':
     wfile = "/data/nanopore/nanoDoc2_1/weight/docweight"
     paramf = "/data/param20.txt"
     #ref = "/data/nanopore/reference/S288C_reference_sequence_R1-1-1_19960731.fa"
-    ref = "/data/nanopore/reference/Yeast_sk1.fa"
-    refpq = "/data/nanopore/nanoDoc2_1/1825_ivt"
-    targetpq = "/data/nanopore/nanoDoc2_1/1825_wt"
-    out = "/data/nanopore/nanoDoc2_1/18S_test.txt"
+    #ref = "/data/nanopore/reference/Yeast_sk1.fa"
+    ref = "/data/nanopore/nanoDoc2_1/testrun/yeastrRNA.fa"
+    refpq = "/data/nanopore/nanoDoc2_1/testrun/1825_ivt"
+    targetpq = "/data/nanopore/nanoDoc2_1/testrun/1825_native"
+    out = "/data/nanopore/nanoDoc2_1/testrun/18S_score.txt"
 
-    chrom = "chr12"
-    chromtgt = "chr12"
-    start = 455938
-    end = 457732
-    strand = "-"
+    chrom = "yeast18S"
+    chromtgt = "yeast18S"
+    # start = 455938
+    # end = 457732
+    start = 1
+    end = 1794
+    # start = 465070
+    # end = 466869
+
+    strand = "+"
 
     chromtgt = chrom
     minreadlen = 200

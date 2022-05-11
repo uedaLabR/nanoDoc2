@@ -27,7 +27,7 @@ delmargin = 50
 margin = 10
 
 
-def flipplopViterbiEach(lgenome, chrom, strand, r_st, r_en, q_st, q_en, trace, move):
+def flipplopViterbiEach(lgenome, chrom, strand, orgcigar,r_st, r_en, q_st, q_en, trace, move):
     # print("")
     possiblemove = addPossibleChangePoint(trace, move)
     possiblemove_idx = ru.toIndex(possiblemove, SEGMENT_ALL)
@@ -43,16 +43,54 @@ def flipplopViterbiEach(lgenome, chrom, strand, r_st, r_en, q_st, q_en, trace, m
     compactTracePositionMap = ru.toMap(possiblemove)
     # print("lgenome",lgenome)
     seq, cigar, left, traceoffset, traceboundary = viterbi(lgenome, compactTrace, trace, compactTracePositionMap,
-                                                           strand, q_st, q_en,
+                                                           strand,orgcigar, q_st, q_en,
                                                            possiblemove_idx, frombasecaller_idx)
     return seq, cigar, left, traceoffset, traceboundary, frombasecaller_idx, possiblemove_idx
 
 
+
+
+
 import signalalign.OutputUtils as ou
 from numba.typed import List
+import pysam
+
+def correctCigar(targetPos, cigar):
+
+    a = pysam.AlignedSegment()
+    a.cigarstring = cigar
+    refpos = 0
+    relpos = 0
+    for cigaroprator, cigarlen in a.cigar:
+
+        if cigaroprator == 3:  # N
+
+            refpos = refpos + cigarlen
+
+        elif cigaroprator == 0 or cigaroprator == 4:  # match or S softclip was not correted so treat as M
+
+            if refpos + cigarlen > targetPos:
+                return relpos + (targetPos - refpos)
+
+            relpos = relpos + cigarlen
+            refpos = refpos + cigarlen
+
+        elif cigaroprator == 2:  # Del
+
+            refpos = refpos + cigarlen
+
+        elif cigaroprator == 1:  # Ins
+
+            if relpos == 0:
+                if targetPos <= cigarlen:
+                    return 0
+
+            relpos = relpos + cigarlen
+
+    return 0
 
 
-def viterbi(lgenome, compactTrace, trace, compactTracePositionMap, strand, q_st, q_en, possiblemove_idx,
+def viterbi(lgenome, compactTrace, trace, compactTracePositionMap, strand,orgcigar, q_st, q_en, possiblemove_idx,
             frombasecaller_idx):
     ctstart = ru.getNear(compactTracePositionMap, q_st)
     # print(compactTracePositionMap)
@@ -66,7 +104,9 @@ def viterbi(lgenome, compactTrace, trace, compactTracePositionMap, strand, q_st,
 
     m_range = List()
     for n in range(q_en - q_st):
-        m = ru.getNear(compactTracePositionMap, q_st + n) - ctstart
+        l = correctCigar(n,orgcigar)
+        # print("cigar",orgcigar,n,l)
+        m = ru.getNear(compactTracePositionMap, q_st+l) - ctstart
         m_range.append(m)
 
     tracebackPath, left = viterbiEach(compactTraceExon, lgenome, possiblemove_idx, frombasecaller_idx, ctstart, m_range)
@@ -194,7 +234,7 @@ import numba
 
 TraceThres = 5  # adhoc threshold to restrict change point
 TraceThresDiff = 1  # adhoc threshold to restrict change point
-penalty_value = 100  # beta
+penalty_value = 80  # beta
 
 SEGMENT_FROM_BASECALLER = 1
 SEGMENT_FROM_CHANGE_POINT = 2
@@ -204,15 +244,13 @@ DIOGONAL_MOVE = 1
 HORIZONTAL_MOVE = 2
 SKIP_MOVE_BASE = 10
 
-IndelPenalty = 2
-IndexExtentionpenalty = 0.5
-MAXDEL_SIZE = 9
+IndelPenalty = 0.8
+IndexExtentionpenalty = 0.1
+MAXDEL_SIZE = 50
 LOW_THRES_FOR_DEFULT_TRANS_PROP = 0.8
 BONUS_FOR_EACH_SEGMENT = 0.1
 count = 0
-
-bannedinterval = 150
-
+bannedinterval = 100
 
 @numba.jit(nopython=True)
 def rangeCheck(n, m, m_range):
@@ -232,18 +270,16 @@ def rangeCheck(n, m, m_range):
 
 @numba.jit(nopython=True)
 def viterbiEach(compactTrace, localgenome, possiblemove_idx, frombasecaller_idx, ctstart, m_range):
+
     intervallen = len(compactTrace)
     genomelen = len(localgenome)
-    # print("genome len",genomelen)
-    # print("iv len",intervallen)
 
     scorematrix = np.zeros((genomelen, intervallen), dtype='float32')
     movematrix = np.zeros((genomelen, intervallen), dtype='float32')
     # score matrix
     maxscore = 0
     penalty = 0.05
-    untransPenaltyFordefultsegment = 0.95
-    traceRatios = None
+
 
     (maxn, maxm) = (0, 0)
 

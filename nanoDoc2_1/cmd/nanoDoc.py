@@ -3,7 +3,7 @@ import os
 import h5tobinnedPq
 import nanoDocAnalysis
 import makeIndex
-import nanoDocAnalysis
+import nanoDoc2_1.analysis.comparisonAnalysisKmean as nanoDocAnalysis
 import pathlib
 import nanoDoc2_1.preprocess.fast5ToProcessedPq as fast5ToProcessedPq
 
@@ -39,7 +39,7 @@ def fast5ToReSegmentedPq(input,output,ref,fmercurrent,thread,qvalueThres):
 @click.option('-s', '--start',default=1)
 @click.option('-e', '--end',default=-1)
 @click.option('-st', '--strand',default="+")
-@click.option('-minreadlen', '--minreadlen',default=50)
+@click.option('-minreadlen', '--minreadlen',default=200)
 def analysis(wight,param,ref,refraw,tgraw,output,chrom,start,end,strand,minreadlen):
 
     click.echo('modification call')
@@ -51,7 +51,7 @@ def analysis(wight,param,ref,refraw,tgraw,output,chrom,start,end,strand,minreadl
     nanoDocAnalysis.modCall(wight,param, ref, refraw,tgraw, output, chrom, chrom, start, end, strand, minreadlen)
 
 
-def pqToBam(wight,param,ref,refraw,tgraw,output,chrom,start,end,strand,minreadlen):
+#def pqToBam():
 
 
 

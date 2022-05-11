@@ -39,6 +39,16 @@ def traincnn(in5mmer,outwight,samplesize,epochs):
 @cmd.command()
 @click.option('-in', '--in5mmer')
 @click.option('-o', '--outwight')
+@click.option('-ssize', '--samplesize',default=1200)
+@click.option('-epochs', '--epochs',default=500)
+def traincnnAdd(in5mmer,outwight,samplesize,epochs):
+
+    click.echo('trainCNN')
+    initialtrainingCNN.main(in5mmer,outwight,samplesize,epochs)
+
+@cmd.command()
+@click.option('-in', '--in5mmer')
+@click.option('-o', '--outwight')
 @click.option('-wight', '--bestwight')
 @click.option('-ssize', '--samplesize',default=12000)
 @click.option('-epochs', '--epochs',default=3)
@@ -46,9 +56,9 @@ def traindoc(in5mmer,outwight,bestwight,samplesize,epochs):
 
     click.echo('trainDoc')
     nucs = ('A','T','C','G')
-    for n1,n2,n3,n4,n5 in itertools.product(nucs, nucs, nucs,nucs, nucs):
+    for n1,n2,n3,n4,n5,n6 in itertools.product(nucs, nucs, nucs,nucs, nucs, nucs):
 
-        nuc = n1+n2+n3+n4+n5
+        nuc = n1+n2+n3+n4+n5+n6
         print('training doc',nuc)
         make5merwight.train(in5mmer,outwight,nuc,bestwight,samplesize,epochs)
 

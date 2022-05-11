@@ -31,7 +31,7 @@ def preprocess(f5file,pathout,ref,ncore,qvaluethres,fmercurrent):
 
     reads = []
     ret = []
-    aligner = mp.Aligner(ref,preset="map-ont")
+    aligner = mp.Aligner(ref,k=12,w=10,min_chain_score=30,min_dp_score=20,best_n=1)
     with get_fast5_file(f5file, mode="r") as f5:
         for read in f5.get_reads():
             try:
@@ -52,6 +52,7 @@ def preprocess(f5file,pathout,ref,ncore,qvaluethres,fmercurrent):
                     r_en = hit.r_en
                     q_st = hit.q_st
                     q_en = hit.q_en
+                    cigar_str = hit.cigar_str
                     #print(chrom,strand,r_st)
                     read = nanoDocRead(read.read_id, chrom, strand, r_st, r_en, q_st, q_en, cigar_str, fastq, trace, move,
                                 row_data)

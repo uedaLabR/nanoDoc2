@@ -57,7 +57,7 @@ def callPlusStrand(wfile, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, t
                    end):
     strand = "+"
     res = None #faiss.StandardGpuResources()
-    for n in range(start, end-6):
+    for n in range(start, end-10):
         subs = seq[(n - start):(n - start) + 6]
         cnt, cntref = eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr,
                                   model_t, fw, chrom,
@@ -301,11 +301,15 @@ def modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, en
 
     coeffA, coeffB, uplimitb, takeparcentile = nanoDocUtils.readParam(paramf)
     margin = 1000
-    refpr = PqReader(refpq, ref,minreadlen,strand,IndelStrict=True) # Assume
-    targetpr = PqReader(targetpq,ref,minreadlen,strand,IndelStrict=True)
+    refpr = PqReader(refpq, ref,minreadlen,strand, start, end, IndelStrict=True) # Assume
+    targetpr = PqReader(targetpq,ref,minreadlen,strand, start, end ,IndelStrict=True)
     model_t = getModel()
 
     fw = open(out, mode='w')
+    infos = "{0}\t{1}\t{2}\t{3}\t{4}".format("#pos","6mer","IVT","WT","score")
+    print(infos)
+    fw.writelines(infos + "\n")
+    fw.flush()
 
     if strand == "-":
         callMinusStrand(wfile, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr, model_t, fw, chrom,
