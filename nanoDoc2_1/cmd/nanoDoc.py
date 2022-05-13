@@ -1,8 +1,5 @@
 import click
 import os
-import h5tobinnedPq
-import nanoDocAnalysis
-import makeIndex
 import nanoDoc2_1.analysis.comparisonAnalysisKmean as nanoDocAnalysis
 import pathlib
 import nanoDoc2_1.preprocess.fast5ToProcessedPq as fast5ToProcessedPq

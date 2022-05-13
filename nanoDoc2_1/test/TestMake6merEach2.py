@@ -10,7 +10,6 @@ if __name__ == "__main__":
     pq1 = "/data/nanopore/nanoDoc2_1/CurlcakeIVT"
     pq2 = "/data/nanopore/nanoDoc2_1/SARSCOV2"
     pqs = [pq1,pq2]
-    #
 
     # fr = PqReader(pq1, 4000)
     # chr = "cc6m_2244_t7_ecorv"

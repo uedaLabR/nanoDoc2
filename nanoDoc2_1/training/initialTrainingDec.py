@@ -86,40 +86,31 @@ import tensorflow as tf
 import os
 
 
-def main(s_data, s_out):
+def main(in5mmer,outdir,samplesize,epochs,device):
 
-    with tf.device('/GPU:1'):
+    with tf.device(device):
 
         os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
         os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
         #tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
-        _main(s_data, s_out)
+        _main(in5mmer,outdir,samplesize,epochs)
 
 import nanoDoc2_1.network.CnnWavenetDecDimention
-def _main(s_data, s_out):
+def _main(in5mmer,outdir,samplesize,epochs):
 
     batch_size = 512
-    gpu_count = 1
-    samplesize = 2400
     DATA_LENGTH = 1024
 
     shape1 = (None, DATA_LENGTH, 1)
-    num_classes = 4078
+
+    df = loadpq(in5mmer, samplesize)
+    train_x, test_x, train_y, test_y, num_classes = prepData(df)
+
     model = CnnWavenetDecDimention.build_network(shape=shape1, num_classes=num_classes)
     model.summary()
 
-    df = loadpq(s_data, samplesize)
-    train_x, test_x, train_y, test_y, num_classes = prepData(df)
-
-    print(len(train_x), len(test_x), len(train_y), len(test_y), num_classes)
-
-    # with tf.device("/cpu:0"):
-
-
-    # model = multi_gpu_model(model, gpus=gpu_count)  # add
-
-    inweight = s_out + "/weightwn_keras_dec.hdf"
-    outweight = s_out + "/weightwn_keras_dec2.hdf"
+    inweight = outdir + "/weightwn.hdf"
+    outweight = outdir + "/weightwn_dec.hdf"
     modelCheckpoint = ModelCheckpoint(filepath=outweight,
                                       monitor='val_accuracy',
                                       verbose=1,
@@ -136,10 +127,11 @@ def _main(s_data, s_out):
                   metrics=['accuracy'])
     model.load_weights(inweight)
 
-    history = model.fit(train_x, train_y, epochs=50, batch_size=batch_size, verbose=1,
+    history = model.fit(train_x, train_y, epochs=epochs, batch_size=batch_size, verbose=1,
               shuffle=True, validation_data=(test_x, test_y),callbacks=[modelCheckpoint])
 
-    historypath ="/data/nanopore/IVT/lealent_dec_log2.txt"
+    historypath = outdir + "/training_dec_log.txt"
+
     hist_df = pd.DataFrame(history.history)
     hist_df.to_csv(historypath)
 

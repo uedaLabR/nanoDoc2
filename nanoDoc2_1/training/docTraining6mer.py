@@ -155,16 +155,16 @@ alpha = 0.5  # for MobileNetV2
 lambda_ = 0.1  # for compact loss
 
 import tensorflow as tf
-def train(s_data1,s_data2, s_out, nuc,bestwight ,samplesize , epoch_num):
+def train(s_data1,s_data2, s_out, nuc,weightdir ,samplesize , epoch_num,device):
 
-    with tf.device('/GPU:1'):
+    with tf.device(device):
 
         os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
         os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
-        #tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
-        _train(s_data1,s_data2, s_out, nuc,bestwight ,samplesize , epoch_num)
+        _train(s_data1,s_data2, s_out, nuc,weightdir ,samplesize , epoch_num)
 
-def _train(s_data1,s_data2, s_out, nuc,bestwight ,samplesize , epoch_num):
+
+def _train(s_data1,s_data2, s_out, nuc,weightdir,samplesize , epoch_num):
 
     if not os.path.exists(s_out + '/' + nuc):
         os.makedirs(s_out + '/' + nuc)
@@ -180,6 +180,8 @@ def _train(s_data1,s_data2, s_out, nuc,bestwight ,samplesize , epoch_num):
     shape1 = (None, DATA_LENGTH, 1)
     optimizer = SGD(lr=5e-5, decay=0.00005)
 
+    bestwight = weightdir + "/weightwn_dec.hdf"
+
     model = CnnWavenetDecDimention.build_network(shape=shape1, num_classes=num_classes_org)
     model.load_weights(bestwight)
 
@@ -190,7 +192,6 @@ def _train(s_data1,s_data2, s_out, nuc,bestwight ,samplesize , epoch_num):
         else:
             layer.trainable = False
 
-    #flat = GlobalAveragePooling1D()(model.layers[-11].output)
     flat = model.layers[-11].output
     model_t = Model(inputs=model.input, outputs=flat)
     model_r = Network(inputs=model_t.input,
@@ -217,7 +218,7 @@ def _train(s_data1,s_data2, s_out, nuc,bestwight ,samplesize , epoch_num):
     loss, loss_c = [], []
     epochs = []
     print("training...")
-    epoch_num = 3
+
     for epochnumber in range(epoch_num):
 
         x_r, y_r, lc, ld = [], [], [], []

@@ -1,12 +1,12 @@
 import click
-import SamplingPlan
-import to5merpq
+
 import os
-import initialtrainingCNN
-import make5merwight
+import nanoDoc2_1.training.initialTraning as initialTraning
+import nanoDoc2_1.training.initialTrainingDec as initialTrainingDec
+import nanoDoc2_1.training.docTraining6mer as docTraining6mer
 import itertools
 import os
-import makeIndex
+
 
 @click.group()
 def cmd():
@@ -16,43 +16,49 @@ def cmd():
 import nanoDoc2_1.trainprep.make6merParquet as make6merParquet
 
 @cmd.command()
-@click.option('-r', '--refs')
-@click.option('-p', '--pqs')
+@click.option('-r', '--refs',multiple=True)
+@click.option('-p', '--pqs',multiple=True)
 @click.option('-o', '--out')
 @click.option('-j', '--join',default=False)
 @click.option('-takeCnt', '--samplesize',default=10000)
 def make6mer(refs,pqs,out,takeCnt,join):
 
+
     make6merParquet.makeSamplePlan(refs, pqs, out, takeCnt,join)
 
 
 @cmd.command()
-@click.option('-in', '--in5mmer')
-@click.option('-o', '--outwight')
+@click.option('-in', '--in6mmer')
+@click.option('-o', '--outdir')
 @click.option('-ssize', '--samplesize',default=1200)
-@click.option('-epochs', '--epochs',default=500)
-def traincnn(in5mmer,outwight,samplesize,epochs):
+@click.option('-epochs', '--epochs',default=200)
+@click.option('-device', '--device')
+def traincnn(in6mmer,outdir,samplesize,epochs,device='/GPU:0'):
 
     click.echo('trainCNN')
-    initialtrainingCNN.main(in5mmer,outwight,samplesize,epochs)
+    initialTraning.main(in6mmer,outdir,samplesize,epochs,device)
 
 @cmd.command()
-@click.option('-in', '--in5mmer')
-@click.option('-o', '--outwight')
+@click.option('-in', '--in6mmer')
+@click.option('-o', '--outdir')
 @click.option('-ssize', '--samplesize',default=1200)
-@click.option('-epochs', '--epochs',default=500)
-def traincnnAdd(in5mmer,outwight,samplesize,epochs):
+@click.option('-epochs', '--epochs',default=50)
+@click.option('-device', '--device')
+def traincnnAdd(in5mmer,outdir,samplesize,epochs,device='/GPU:0'):
 
-    click.echo('trainCNN')
-    initialtrainingCNN.main(in5mmer,outwight,samplesize,epochs)
+    click.echo('trainCNN Dec')
+    initialTrainingDec.main(in5mmer,outdir,samplesize,epochs,device)
+
 
 @cmd.command()
-@click.option('-in', '--in5mmer')
-@click.option('-o', '--outwight')
-@click.option('-wight', '--bestwight')
-@click.option('-ssize', '--samplesize',default=12000)
+@click.option('-d1', '--data1')
+@click.option('-d2', '--data2')
+@click.option('-o', '--outdir')
+@click.option('-in', '--weightdir')
+@click.option('-ssize', '--samplesize',default=12750)
 @click.option('-epochs', '--epochs',default=3)
-def traindoc(in5mmer,outwight,bestwight,samplesize,epochs):
+@click.option('-device', '--device')
+def traindoc(data1, data2,outdir,weightdir,samplesize,epochs,device='/GPU:0'):
 
     click.echo('trainDoc')
     nucs = ('A','T','C','G')
@@ -60,7 +66,9 @@ def traindoc(in5mmer,outwight,bestwight,samplesize,epochs):
 
         nuc = n1+n2+n3+n4+n5+n6
         print('training doc',nuc)
-        make5merwight.train(in5mmer,outwight,nuc,bestwight,samplesize,epochs)
+        docTraining6mer.train(data1, data2, outdir, nuc, weightdir, samplesize, epochs,device)
+
+
 
 def main():
     cmd()

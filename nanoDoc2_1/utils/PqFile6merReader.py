@@ -245,7 +245,7 @@ class PqReader:
 
 
 
-    def __init__(self, path,ref,minreadlen,strand,start, end, maxreads = 500,IndelStrict = False):
+    def __init__(self, path,ref,minreadlen,strand,start=0, end=0, maxreads = 500,IndelStrict = False):
 
         self.IndelStrict = IndelStrict
         self.path = path

@@ -20,31 +20,22 @@ def prepData(df1):
     test_x = []
     train_y = []
     test_y = []
-    totalcnt = 0
     labelidx = df1["fmer"].unique().tolist()
-    print(labelidx)
-    print(len(labelidx))
 
-    signallen = 1024
 
     totalcnt = 0
     for idx, row in df1.iterrows():
 
         flg = labelidx.index(row[1])
         signal = np.array(row[3])
-        # count = len(signal)/signallen
-        # print(count)
 
         if totalcnt%12 > 10:
             test_x.extend(signal)
             test_y.append(flg)
-        #elif totalcnt%12 < 5 :
         else:
             train_x.extend(signal)
             train_y.append(flg)
 
-        # if cnt == 30000:
-        #     break
         totalcnt += 1
 
     print("totalcnt", totalcnt)
@@ -84,34 +75,27 @@ import tensorflow as tf
 import os
 
 
-def main(s_data, s_out):
+def main(in6mmer,outdir,samplesize,epochs,device):
 
-    with tf.device('/GPU:1'):
+    with tf.device(device):
 
         os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
         os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
         #tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
-        _main(s_data, s_out)
+        _main(in6mmer,outdir,samplesize,epochs)
 
 import nanoDoc2_1.network.CnnWavenet as CnnWavenet
-def _main(s_data, s_out):
+def _main(in6mmer,outdir,samplesize,epochs):
 
     batch_size = 1024
-    gpu_count = 1
-    samplesize = 3000
 
     shape1 = (None, DATA_LENGTH, 1)
-    df = loadpq(s_data, samplesize)
+    df = loadpq(in6mmer, samplesize)
     train_x, test_x, train_y, test_y, num_classes = prepData(df)
-
-    print(len(train_x), len(test_x), len(train_y), len(test_y), num_classes)
-
-    # with tf.device("/cpu:0"):
-
     model = CnnWavenet.build_network(shape=shape1, num_classes=num_classes)
     model.summary()
 
-    outweight = s_out+"/weightwn_keras.hdf"
+    outweight = outdir+"/weightwn.hdf"
     modelCheckpoint = ModelCheckpoint(filepath=outweight,
                                       monitor='val_accuracy',
                                       verbose=1,
@@ -127,10 +111,10 @@ def _main(s_data, s_out):
                   # optimizer=opt,
                   metrics=['accuracy'])
 
-    history = model.fit(train_x, train_y, epochs=100, batch_size=batch_size, verbose=1,
+    history = model.fit(train_x, train_y, epochs=epochs, batch_size=batch_size, verbose=1,
               shuffle=True, validation_data=(test_x, test_y),callbacks=[modelCheckpoint])
 
-    historypath ="/data/nanopore/nanoDoc2_1/testrun/lealent_log.txt"
+    historypath = outdir + "/traning_log.txt"
     hist_df = pd.DataFrame(history.history)
     hist_df.to_csv(historypath)
 

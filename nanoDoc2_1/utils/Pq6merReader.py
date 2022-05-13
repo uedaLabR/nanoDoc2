@@ -128,16 +128,7 @@ def binSignal(trimsignal, trimlength, mode=1):
         left = trimlength - siglen
         lefthalf = left // 2
 
-
-
-        # rand1 = np.random.rand(lefthalf) * sigma
-        # rand1 = rand1 + med
         leftlen = trimlength - siglen - lefthalf
-        # rand2 = np.random.rand(leftlen) * sigma
-        # rand2 = rand2 + med
-        # #
-        # ret = np.concatenate([rand1, trimsignal, rand2])
-
         ret = np.concatenate([np.zeros(lefthalf), trimsignal, np.zeros(leftlen)])
 
         return ret
@@ -148,8 +139,9 @@ def binTrace(trace, trimlength):
     if x == trimlength:
         return trace
     elif x > trimlength:
-        half = (x-trimlength)//2-1
-        return trace[half:half+trimlength]
+        # half = (x-trimlength)//2-1
+        # return trace[half:half+trimlength]
+        return None
     else:
         half = (trimlength-x)//2 - 1
         left = trimlength - half- x
@@ -166,6 +158,8 @@ def binned(trimtrace, traceItv,trimUnitLength,rseq,signal):
 
 
     bintrace = binTrace(trimtrace,DATA_LENGTH_Trace)
+    if bintrace is None:
+        return None
     if len(signal) == 0:
         return None
     binsignal = binSignal(signal, DATA_LENGTH)
@@ -368,6 +362,7 @@ class PqReader:
                 ' & chr == "' + chr + '" & strand == ' + str(strand) + '' + \
                 ' & (end-start) >= ' + str(self.minreadlen)
 
+        print(query)
         print(self.indexdf)
         pqfiles = self.indexdf.query(query)
         #
@@ -414,6 +409,8 @@ class PqReader:
                 readsIndex = addIndex
             elif addIndex is not None:
 
+                print("addIndex")
+                print(pos2, addIndex)
                 readsIndex = pd.concat([readsIndex, addIndex])
 
 
@@ -608,6 +605,20 @@ class PqReader:
             return None
         return traceintervals[relativeStart:relativeEnd]
 
+    def checkQuality(sef,trace, traceItv, rseq):
+
+        print(rseq)
+        print(len(trace),trace)
+        start = traceItv[0]
+        for n in range(1,len(trace)):
+
+            m = np.mean(trace[start:n])
+            print(m)
+            start = traceItv[1]
+
+        return False
+
+
 
     def getOneRow(self,row,strand, pos,rseq):
 
@@ -635,7 +646,9 @@ class PqReader:
         traceend = traceItv[-1]
         trace_t = trace[tracestart:traceend]
         signal_t = signal[tracestart*SignalUNIT:traceend*SignalUNIT]
-        #print(signal)
+        # checkNG = self.checkQuality(trace,traceItv,rseq)
+        # if checkNG:
+        #     return None
         #
         ret = binned(trace_t,traceItv,DATA_LENGTH_UNIT,rseq,signal_t)
         if ret is None:
