@@ -175,14 +175,16 @@ def _train(s_data1,s_data2, s_out, nuc,weightdir,samplesize , epoch_num):
       print("no pq for",pqpath)
       return
 
+
+    bestwight = weightdir + "/weightwn_dec.hdf"
+
     num_classes_org = 4078
     num_classes = 255
     shape1 = (None, DATA_LENGTH, 1)
     optimizer = SGD(lr=5e-5, decay=0.00005)
 
-    bestwight = weightdir + "/weightwn_dec.hdf"
-
     model = CnnWavenetDecDimention.build_network(shape=shape1, num_classes=num_classes_org)
+    model.summary()
     model.load_weights(bestwight)
 
 
@@ -280,8 +282,7 @@ if __name__ == '__main__':
 
     #train(sys.argv[2], sys.argv[3], sys.argv[1], 10)
     #s_out = "/data/nanopore/IVT/weight/"
-    s_out = "/data/nanopore/IVT/weight_dec/"
-    bestwight = s_out + "weightwn_keras_dec2.hdf"
+    bestwightdir = "/data/nanopore/nanoDoc2_1/varidate/weight_dec/"
     epoch_num = 3
     #train(sys.argv[2], sys.argv[3], sys.argv[1], 10)
 
@@ -290,9 +291,9 @@ if __name__ == '__main__':
     cnt = 0
     for n1, n2, n3, n4, n5 ,n6 in itertools.product(nucs, nucs, nucs, nucs, nucs, nucs):
 
-        s_data1 = "/data/nanopore/nanoDoc2_1/10000signal"
-        s_data2 = "/data/nanopore/nanoDoc2_1/50signal"
-        s_out = "/data/nanopore/nanoDoc2_1/weight/docweight"
+        s_data1 = "/data/nanopore/nanoDoc2_1/varidate/10000signal"
+        s_data2 = "/data/nanopore/nanoDoc2_1/varidate/50signal"
+        s_out = "/data/nanopore/nanoDoc2_1/varidate/docweight"
         nuc = n1+n2+n3+n4+n5+n6
         epoch_num = 5
         samplesize = 12750
@@ -300,5 +301,5 @@ if __name__ == '__main__':
         if os.path.exists(dir):
             continue
 
-        train(s_data1,s_data2, s_out, nuc, bestwight, samplesize, epoch_num)
+        train(s_data1,s_data2, s_out, nuc, bestwightdir, samplesize, epoch_num, "/GPU:0")
         cnt+=1

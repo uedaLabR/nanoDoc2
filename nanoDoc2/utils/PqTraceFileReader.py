@@ -67,7 +67,6 @@ def analyzeIdxShift(subtraces,rseq):
         if score > maxscore:
             maxidx = idx
 
-    #print("maxidx",maxidx)
     return maxidx
 
 

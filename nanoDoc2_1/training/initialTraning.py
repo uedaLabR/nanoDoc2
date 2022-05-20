@@ -9,7 +9,7 @@ from numba import jit
 
 DATA_LENGTH = 1024
 
-def loadpq(path, samplesize):
+def loadpq(path):
 
     df = pq.read_table(path).to_pandas()
     return df
@@ -75,22 +75,22 @@ import tensorflow as tf
 import os
 
 
-def main(in6mmer,outdir,samplesize,epochs,device):
+def main(in6mmer,outdir,epochs,device):
 
     with tf.device(device):
 
         os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
         os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
         #tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
-        _main(in6mmer,outdir,samplesize,epochs)
+        _main(in6mmer,outdir,epochs)
 
 import nanoDoc2_1.network.CnnWavenet as CnnWavenet
-def _main(in6mmer,outdir,samplesize,epochs):
+def _main(in6mmer,outdir,epochs):
 
     batch_size = 1024
 
     shape1 = (None, DATA_LENGTH, 1)
-    df = loadpq(in6mmer, samplesize)
+    df = loadpq(in6mmer)
     train_x, test_x, train_y, test_y, num_classes = prepData(df)
     model = CnnWavenet.build_network(shape=shape1, num_classes=num_classes)
     model.summary()
@@ -122,6 +122,8 @@ def _main(in6mmer,outdir,samplesize,epochs):
 if __name__ == '__main__':
 
     #s_data = "/data/nanopore/nanoDoc2/5000each.pq"
-    s_data = "/data/nanopore/nanoDoc2_1/1200signal.pq"
-    s_out = "/data/nanopore/nanoDoc2_1/testrun/weight/"
-    main(s_data, s_out)
+    # s_data = "/data/nanopore/nanoDoc2_1/1200signal.pq"
+    s_data =  "/data/nanopore/nanoDoc2_1/varidate/1200signal.pq"
+    s_out = "/data/nanopore/nanoDoc2_1/varidate/weight/"
+    main(s_data, s_out, 200,"/GPU:0")
+    #main(s_data, s_out)

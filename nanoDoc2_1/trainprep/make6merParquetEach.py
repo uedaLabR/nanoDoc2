@@ -31,7 +31,7 @@ class Counter:
     def getList(self):
         return self.l
 
-from nanoDoc2_1.utils.PqFileReader import PqReader
+from nanoDoc2_1.utils.PqFile6merReader import PqReader
 import sys
 import random
 import mappy as mp
@@ -104,18 +104,54 @@ def bufferout(output_file, datadict, writecnt):
             flavor=['spark'],
         )
 
+import glob
+def mergePq(path):
+
+    dirs = os.listdir(path=path)
+
+    for dir in dirs:
+
+        fout = path + "/" + dir + ".pq"
+        f = path + "/" + dir
+        files = glob.glob(f + "/*.pq")
+        dftotal = None
+        for file in files:
+
+            df = pq.read_table(file).to_pandas()
+            if dftotal is None:
+                dftotal = df
+            else:
+                dftotal = pd.concat([dftotal, df])
+
+        pschema = schema(
+            [
+                ('flg', uint32()),
+                ('fmer', string()),
+                ('trace', list_(uint16())),
+                ('signal', list_(float32()))
+            ]
+        )
+
+        pyarrow_table = Table.from_pandas(dftotal, pschema)
+        pq.write_table(
+            pyarrow_table,
+            fout,
+            row_group_size=4000,
+            compression='snappy',
+            flavor=['spark'],
+        )
 
 def makeSamplePlan(refs,pqs,output_file,takeCnt):
 
     fivemerDict={}
     recordL=[]
     cnt = 0
-
+    strand = True
     for ref in refs:
 
         a = mp.Aligner(ref)
         records = SeqIO.parse(ref, 'fasta')
-        fr = PqReader(pqs[cnt], ref,takeCnt,IndelStrict=True)
+        fr = PqReader(pqs[cnt], ref,400,strand,maxreads = takeCnt,IndelStrict=True)
 
         for record in records:
            print(record.name)
@@ -178,10 +214,10 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
             path = pqs[fileidx]
             ref = refs[fileidx]
             print("init reader")
-            fr = PqReader(path,ref, takeCnt)
+            fr = PqReader(path, ref, 400, strand, maxreads=takeCnt,IndelStrict=True)
 
 
-        traces,signals,sampledlen = fr.getRowData(chr, True, pos,takecnt=takecnt)
+        traces,signals,sampledlen,infos = fr.getRowData(chr, True, pos,takecnt=takecnt)
         print(p,len(signals),takecnt)
 
         pfidx = fileidx
@@ -206,6 +242,7 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
 
     writecnt += 1
     bufferout(output_file, datadict, writecnt)
+    mergePq(output_file)
 
     #write to parquet
     # keys = datadict.keys()
@@ -253,14 +290,14 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
     #         compression='snappy',
     #         flavor=['spark'],
     #     )
-
-        # sidx = 0
-        # sb4 = None
-        #
-        # f = open(path_w, mode='w')
-        # for d in posList:
-        #     f.write(",".join(map(str, d)) + "\n")
-        # f.close()
+    #
+    #     # sidx = 0
+    #     # sb4 = None
+    #     #
+    #     # f = open(path_w, mode='w')
+    #     # for d in posList:
+    #     #     f.write(",".join(map(str, d)) + "\n")
+    #     # f.close()
 
 
 

@@ -27,17 +27,15 @@ def fast5ToReSegmentedPq(input,output,ref,fmercurrent,thread,qvalueThres):
 
 @cmd.command()
 @click.option('-w', '--wight')
-@click.option('-p', '--param')
 @click.option('-r', '--ref')
-@click.option('-rraw', '--refraw')
-@click.option('-traw', '--tgraw')
+@click.option('-rpq', '--rpq')
+@click.option('-tgpq', '--tgpq')
 @click.option('-o', '--output')
 @click.option('-chrom', '--chrom',default="")
 @click.option('-s', '--start',default=1)
 @click.option('-e', '--end',default=-1)
-@click.option('-st', '--strand',default="+")
 @click.option('-minreadlen', '--minreadlen',default=200)
-def analysis(wight,param,ref,refraw,tgraw,output,chrom,start,end,strand,minreadlen):
+def analysis(wight,ref,refraw,tgraw,output,chrom,start,end,minreadlen):
 
     click.echo('modification call')
     p_sub = pathlib.Path(output)
@@ -45,7 +43,7 @@ def analysis(wight,param,ref,refraw,tgraw,output,chrom,start,end,strand,minreadl
         os.mkdir(p_sub.parent)
     print(refraw)
     print(tgraw)
-    nanoDocAnalysis.modCall(wight,param, ref, refraw,tgraw, output, chrom, chrom, start, end, strand, minreadlen)
+    nanoDocAnalysis.modCall(wight, ref, refraw,tgraw, output, chrom, chrom, start, end,minreadlen)
 
 @cmd.command()
 @click.option('-f', '-fin')

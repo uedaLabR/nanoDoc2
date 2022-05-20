@@ -109,7 +109,8 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
             path = pqs[fileidx]
             ref = refs[fileidx]
             print("init reader")
-            fr = PqReader(path,ref,True, 1200)
+            fr = PqReader(path, ref, 400, strand, maxreads=1200, IndelStrict=True)
+
 
         traces,signals,sampledlen,infos = fr.getRowData(chr, True, pos,takecnt=takecnt)
         print(p,len(signals),takecnt)

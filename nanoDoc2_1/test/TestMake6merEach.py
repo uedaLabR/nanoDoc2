@@ -5,11 +5,11 @@ if __name__ == "__main__":
     ref1 = "/data/nanopore/reference/Curlcake.fa"
     ref2 = "/data/nanopore/reference/Cov2_Korea.fa"
 
-    path_w = "/data/nanopore/nanoDoc2_1/10000signal/"
+    path_w = "/data/nanopore/nanoDoc2_1/varidate/10000signal/"
     refs= [ref1,ref2]
     #refs = [ref1]
-    pq1 = "/data/nanopore/nanoDoc2_1/CurlcakeIVT"
-    pq2 = "/data/nanopore/nanoDoc2_1/SARSCOV2"
+    pq1 = "/data/nanopore/nanoDoc2_1/varidate/CurlcakeIVT"
+    pq2 = "/data/nanopore/nanoDoc2_1/varidate/SARSCOV2"
     pqs = [pq1,pq2]
     #pqs = [pq1]
     #
@@ -20,3 +20,4 @@ if __name__ == "__main__":
 
     takeCnt = 12750
     make6merParquetEach.makeSamplePlan(refs,pqs, path_w,takeCnt)
+    #make6merParquetEach.mergePq(path_w)

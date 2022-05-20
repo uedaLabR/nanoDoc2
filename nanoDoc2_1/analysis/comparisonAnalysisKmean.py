@@ -35,33 +35,31 @@ def getSD(cnt, coeffA, coeffB):
     return sd
 
 
-def callMinusStrand(wfile, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr, model_t, fw, chrom, chromtgt,
-                    start,
-                    end):
-    n = end
-    idx = 0
-    res = None #faiss.StandardGpuResources()
-    strand = "-"
-    while n > start+5:
-        subs = seq[idx:idx + 6]
-        cnt, cntref = eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr,
-                                  model_t, fw, chrom,
-                                  chromtgt,res)
+# def callMinusStrand(wfile, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr, model_t, fw, chrom, chromtgt,
+#                     start,
+#                     end):
+#     n = end
+#     idx = 0
+#     res = None #faiss.StandardGpuResources()
+#     strand = "-"
+#     while n > start+5:
+#         subs = seq[idx:idx + 6]
+#         cnt, cntref = eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr,
+#                                   model_t, fw, chrom,
+#                                   chromtgt,res)
+#
+#         n = n - 1
+#         idx = idx + 1
 
-        n = n - 1
-        idx = idx + 1
 
+def callPlusStrand(wfile, uplimit, seq, refpr, targetpr, model_t, fw, chrom,chromtgt,start, end):
 
-def callPlusStrand(wfile, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr, model_t, fw, chrom, chromtgt,
-                   start,
-                   end):
     strand = "+"
     res = None #faiss.StandardGpuResources()
     for n in range(start, end-10):
         subs = seq[(n - start):(n - start) + 6]
-        cnt, cntref = eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr,
-                                  model_t, fw, chrom,
-                                  chromtgt,res)
+        cnt, cntref = eachProcess(wfile, n, subs, strand, uplimit, refpr, targetpr,
+                                  model_t, fw, chrom, chromtgt)
 
 
 
@@ -226,9 +224,10 @@ def getFormat(dlist):
 
     return train_x
 
-def eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr, model_t, fw,
-                chrom,
-                chromtgt,res):
+
+def eachProcess(wfile, n, subs, strand, uplimit, refpr, targetpr,
+                              model_t, fw, chrom,
+                              chromtgt):
 
     weight_path = wfile + "/" +str(subs) + "/model_t_ep_2.h5"
     if not os.path.isfile(weight_path):
@@ -288,7 +287,7 @@ def eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile,
     return (cnt, cntref)
 
 
-def modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, end, strand, minreadlen,uplimit = 500):
+def modCall(wfile, ref, refpq, targetpq, out, chrom, chromtgt, start, end, minreadlen,uplimit = 500):
 
 
     if chrom == "":
@@ -299,8 +298,6 @@ def modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, en
     if end < 0:
         end = len(seq)
 
-    coeffA, coeffB, uplimitb, takeparcentile = nanoDocUtils.readParam(paramf)
-    margin = 1000
     refpr = PqReader(refpq, ref,minreadlen,strand, start, end, IndelStrict=True) # Assume
     targetpr = PqReader(targetpq,ref,minreadlen,strand, start, end ,IndelStrict=True)
     model_t = getModel()
@@ -310,15 +307,10 @@ def modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, en
     print(infos)
     fw.writelines(infos + "\n")
     fw.flush()
+    callPlusStrand(wfile, uplimit,  seq, refpr, targetpr, model_t, fw, chrom,
+                   chromtgt,
+                   start, end)
 
-    if strand == "-":
-        callMinusStrand(wfile, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr, model_t, fw, chrom,
-                        chromtgt,
-                        start, end)
-    else:
-        callPlusStrand(wfile, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr, model_t, fw, chrom,
-                       chromtgt,
-                       start, end)
 
     fw.close()
 

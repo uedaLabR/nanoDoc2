@@ -164,7 +164,6 @@ DATA_LENGTH = 1024
 DATA_LENGTH_Trace = 100
 def binned(trimtrace, traceItv,trimUnitLength,rseq,signal):
 
-
     bintrace = binTrace(trimtrace,DATA_LENGTH_Trace)
     if len(signal) == 0:
         return None
@@ -599,8 +598,33 @@ class PqReader:
         #print("start end",cigar,pos,_start,rel0,start,end)
         return start,end
 
+    def getScore(self,subtraces, seq):
 
-    def calcStartEnd(self,strand,start,end,cigar,pos,offset,traceintervals):
+        score = 0
+        upto = min(len(seq), len(subtraces))
+        for n in range(upto):
+            nuc = seq[n]
+            atrace = subtraces[n]
+            ascore = eachScore(nuc, atrace)
+            score += ascore
+        return score
+
+
+    def analyzeIdxShift(self,subtraces, trace,subtraceIntv,rseq):
+
+
+        maxidx = 0
+        maxscore = 0
+        for n in range(6):
+            seq = rseq[n:n + 10]
+            score = self.getScore(subtraces, seq)
+            idx = n - 3
+            if score > maxscore:
+                maxidx = idx
+
+        return maxidx
+
+    def calcStartEnd(self,strand,start,end,cigar,pos,offset,traceintervals,trace,rseq):
 
         rp = self.getRelativePos(strand,start,end,cigar,pos,len(traceintervals))
         if rp is None:
@@ -609,7 +633,10 @@ class PqReader:
         relativeStart, relativeEnd = rp
         if relativeEnd >= len(traceintervals) or relativeStart >= len(traceintervals):
             return None
-        return traceintervals[relativeStart:relativeEnd]
+        subtraceIntv = traceintervals[relativeStart:relativeEnd]
+        return subtraceIntv
+        # shift = self.ananlyzeshift(trace,subtraceIntv,rseq)
+        # return traceintervals[relativeStart+shift:relativeEnd+shift]
 
 
     def getOneRow(self,row,strand, pos,rseq):
@@ -625,7 +652,7 @@ class PqReader:
         signal = row['signal']
         #
         #print(traceintervals)
-        sted = self.calcStartEnd(strand,start,end,cigar,pos,offset,traceintervals)
+        sted = self.calcStartEnd(strand,start,end,cigar,pos,offset,traceintervals,trace,rseq)
         if sted is None:
             return None
         traceItv = sted
@@ -638,7 +665,8 @@ class PqReader:
         traceend = traceItv[-1]
         trace_t = trace[tracestart:traceend]
         signal_t = signal[tracestart*SignalUNIT:traceend*SignalUNIT]
-        #print(signal)
+
+
         #
         ret = binned(trace_t,traceItv,DATA_LENGTH_UNIT,rseq,signal_t)
         if ret is None:

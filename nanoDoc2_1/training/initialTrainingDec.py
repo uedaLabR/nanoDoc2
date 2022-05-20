@@ -10,8 +10,7 @@ from nanoDoc2_1.network import CnnWavenetDecDimention
 
 DATA_LENGTH =  1024
 
-def loadpq(path, samplesize):
-
+def loadpq(path):
     df = pq.read_table(path).to_pandas()
     return df
 
@@ -86,30 +85,30 @@ import tensorflow as tf
 import os
 
 
-def main(in5mmer,outdir,samplesize,epochs,device):
+def main(in5mmer,indir,outdir,epochs,device):
 
     with tf.device(device):
 
         os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
         os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
         #tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
-        _main(in5mmer,outdir,samplesize,epochs)
+        _main(in5mmer,indir,outdir,epochs)
 
 import nanoDoc2_1.network.CnnWavenetDecDimention
-def _main(in5mmer,outdir,samplesize,epochs):
+def _main(in5mmer,indir,outdir,epochs):
 
     batch_size = 512
     DATA_LENGTH = 1024
 
     shape1 = (None, DATA_LENGTH, 1)
 
-    df = loadpq(in5mmer, samplesize)
+    df = loadpq(in5mmer)
     train_x, test_x, train_y, test_y, num_classes = prepData(df)
-
-    model = CnnWavenetDecDimention.build_network(shape=shape1, num_classes=num_classes)
+    inweight = indir + "weightwn.hdf"
+    model = CnnWavenetDecDimention.build_network(shape=shape1, num_classes=num_classes,inweight=inweight)
     model.summary()
 
-    inweight = outdir + "/weightwn.hdf"
+
     outweight = outdir + "/weightwn_dec.hdf"
     modelCheckpoint = ModelCheckpoint(filepath=outweight,
                                       monitor='val_accuracy',
@@ -125,7 +124,6 @@ def _main(in5mmer,outdir,samplesize,epochs):
                                                              amsgrad=False),
                   # optimizer=opt,
                   metrics=['accuracy'])
-    model.load_weights(inweight)
 
     history = model.fit(train_x, train_y, epochs=epochs, batch_size=batch_size, verbose=1,
               shuffle=True, validation_data=(test_x, test_y),callbacks=[modelCheckpoint])
@@ -138,6 +136,11 @@ def _main(in5mmer,outdir,samplesize,epochs):
 
 if __name__ == '__main__':
 
-    s_data = "/data/nanopore/nanoDoc2_1/1200signal.pq"
-    s_out = "/data/nanopore/IVT/weight_dec/"
-    main(s_data, s_out)
+    # s_data = "/data/nanopore/nanoDoc2_1/1200signal.pq"
+    # s_out = "/data/nanopore/IVT/weight_dec/"
+
+    s_data =  "/data/nanopore/nanoDoc2_1/varidate/1200signal.pq"
+    s_in = "/data/nanopore/nanoDoc2_1/varidate/weight/"
+    s_out = "/data/nanopore/nanoDoc2_1/varidate/weight_dec/"
+    main(s_data, s_in,s_out, 200, "/GPU:0")
+    # main(s_data, s_out)

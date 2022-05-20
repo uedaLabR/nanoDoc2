@@ -74,10 +74,11 @@ def resblock(x_in, layer_n, kernel, dilation, use_se=True):
     return x
 
 
-def build_network(shape, num_classes,do_r = 0.2):
+def build_network(shape, num_classes,inweight=None,do_r = 0.2):
 
     model = CnnWavenetKeras.build_network(shape=shape, num_classes=num_classes)
-    model.load_weights("/data/nanopore/IVT/weight/weightwn_keras.hdf")
+    if inweight != None:
+        model.load_weights(inweight)
 
     do_r = 0.3
     x = model.layers[-3].output
