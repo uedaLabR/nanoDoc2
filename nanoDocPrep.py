@@ -14,18 +14,20 @@ def cmd():
 
 
 import nanoDoc2_1.trainprep.make6merParquet as make6merParquet
+import nanoDoc2_1.trainprep.make6merParquetEach as make6merParquetEach
 
 @cmd.command()
 @click.option('-r', '--refs',multiple=True)
 @click.option('-p', '--pqs',multiple=True)
 @click.option('-o', '--out')
 @click.option('-j', '--join',default=False)
-@click.option('-takeCnt', '--samplesize',default=10000)
+@click.option('-takeCnt', '--samplesize',default=1200)
 def make6mer(refs,pqs,out,takeCnt,join):
 
-
-    make6merParquet.makeSamplePlan(refs, pqs, out, takeCnt,join)
-
+    if join:
+        make6merParquet.makeSamplePlan(refs, pqs, out, takeCnt)
+    else:
+        make6merParquetEach.makeSamplePlan(refs, pqs, out, takeCnt)
 
 @cmd.command()
 @click.option('-in', '--in6mmer')
