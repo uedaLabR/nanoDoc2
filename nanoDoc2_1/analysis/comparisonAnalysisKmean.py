@@ -58,7 +58,7 @@ def callPlusStrand(wfile, uplimit, seq, refpr, targetpr, model_t, fw, chrom,chro
     res = None #faiss.StandardGpuResources()
     for n in range(start, end-10):
         subs = seq[(n - start):(n - start) + 6]
-        cnt, cntref = eachProcess(wfile, n, subs, strand, uplimit, refpr, targetpr,
+        cnt, cntref = eachProcess(wfile, n, start,subs, strand, uplimit, refpr, targetpr,
                                   model_t, fw, chrom, chromtgt)
 
 
@@ -225,7 +225,7 @@ def getFormat(dlist):
     return train_x
 
 
-def eachProcess(wfile, n, subs, strand, uplimit, refpr, targetpr,
+def eachProcess(wfile, n, start,subs, strand, uplimit, refpr, targetpr,
                               model_t, fw, chrom,
                               chromtgt):
 
@@ -252,7 +252,7 @@ def eachProcess(wfile, n, subs, strand, uplimit, refpr, targetpr,
         return (0,0)
 
     #    reference start or end, or nodepth
-    if (cnt < 5 or cntref < 5 or (rawdatas is None) or (refdatas is None)):
+    if  ((((n-start) < 25 ) and (cnt < 500 or cntref < 500 )) or (cnt < 5 or cntref < 5 or (rawdatas is None) or (refdatas is None))) :
         infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n, str(subs), cnt, cnt,  0)
         print(infos)
         fw.writelines(infos + "\n")
@@ -294,7 +294,10 @@ def modCall(wfile, ref, refpq, targetpq, out, chrom, chromtgt, start, end, minre
         chrom = nanoDocUtils.getFirstChrom(ref)
         chromtgt = chrom
         print("modcallinit", chrom)
+    strand = "+"
     seq = nanoDocUtils.getSeq(ref, chrom, start, end, strand)
+    if start < 0:
+        start = 1
     if end < 0:
         end = len(seq)
 

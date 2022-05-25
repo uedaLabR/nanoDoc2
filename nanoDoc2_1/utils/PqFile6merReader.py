@@ -277,6 +277,7 @@ class PqReader:
         for file in sortedfile:
 
             parquet_file = pq.ParquetFile(file)
+
             chrInfo = parquet_file.metadata.row_group(0).column(2).statistics.min
             strandInfo = parquet_file.metadata.row_group(0).column(3).statistics.min
             startInfo = parquet_file.metadata.row_group(0).column(4).statistics.min

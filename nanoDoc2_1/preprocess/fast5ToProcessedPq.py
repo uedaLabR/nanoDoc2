@@ -27,11 +27,12 @@ def get_fast5_files_in_dir(directory:str):
     return list(sorted(glob.glob(directory + '/*.fast5',recursive=True)))
 
 import os
-def preprocess(f5file,pathout,ref,ncore,qvaluethres,fmercurrent):
+def preprocess(f5file,pathout,ref,ncore,qvaluethres,fmercurrent,mappyoption):
 
     reads = []
     ret = []
-    aligner = mp.Aligner(ref,k=12,w=10,min_chain_score=30,min_dp_score=20,best_n=1)
+    k,w,min_chain_score,min_dp_score = mappyoption
+    aligner = mp.Aligner(ref,k=k,w=w,min_chain_score=min_chain_score,min_dp_score=min_dp_score,best_n=1)
     with get_fast5_file(f5file, mode="r") as f5:
         for read in f5.get_reads():
             try:
@@ -139,7 +140,7 @@ def mergeParquet(pathout,ncore):
         p.map(_mergeParquet,dirlistTohandle)
 
 
-def h5tosegmantedPq(path,pathout,ref,MAX_CORE,qvaluethres,fmercurrent):
+def h5tosegmantedPq(path,pathout,ref,MAX_CORE,qvaluethres,fmercurrent,mappyoption):
 
     f5list = get_fast5_files_in_dir(path)
     ncore = get_number_of_core(MAX_CORE=MAX_CORE)
@@ -147,7 +148,7 @@ def h5tosegmantedPq(path,pathout,ref,MAX_CORE,qvaluethres,fmercurrent):
     for f5file in f5list:
 
         print(cnt,f5file)
-        preprocess(f5file,pathout,ref,ncore,qvaluethres,fmercurrent)
+        preprocess(f5file,pathout,ref,ncore,qvaluethres,fmercurrent,mappyoption)
         cnt += 1
 
     #marge Parquet

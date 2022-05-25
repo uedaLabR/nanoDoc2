@@ -31,9 +31,9 @@ if __name__ == '__main__':
     # end = 4037072
 
     ref = "/data/nanopore/nanoDoc2_1/testrun/ecolirRNA.fa"
-    refpq = "/data/nanopore/nanoDoc2_1/testrun/1623_ivt"
-    targetpq = "/data/nanopore/nanoDoc2_1/testrun/1623_native"
-    out = "/data/nanopore/nanoDoc2_1/testrun/16S_score.txt"
+    refpq = "/data/nanopore/nanoDoc2_1/varidate/1623_ivt"
+    targetpq = "/data/nanopore/nanoDoc2_1/varidate/1623_native"
+    out = "/data/nanopore/nanoDoc2_1/varidate/16S_score.txt"
 
     chrom = "ecoli16S"
     chromtgt = "ecoli16S"
@@ -50,4 +50,5 @@ if __name__ == '__main__':
         # os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
         # os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-        comparisonAnalysisKmean.modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, end, strand, minreadlen)
+        #modCall(wfile, ref, refpq, targetpq, out, chrom, chromtgt, start, end, minreadlen, uplimit=500):
+        comparisonAnalysisKmean.modCall(wfile, ref, refpq, targetpq, out, chrom, chromtgt, start, end, minreadlen)

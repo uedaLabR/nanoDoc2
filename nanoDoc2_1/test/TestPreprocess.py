@@ -6,10 +6,10 @@ if __name__ == "__main__":
     pathout = '/data/nanopore/nanoDoc2_1/varidate/CurlcakeIVT'
     ref = "/data/nanopore/reference/Curlcake.fa"
 
-    # path = '/data/nanopore/rRNA/1623_ivt-multi/multifast5_2/workspacetest'
-    # pathout = '/data/nanopore/nanoDoc2_1/testrun2/ecoli'
-    # #ref = "/data/nanopore/reference/NC000913.fa"
-    # ref = "/data/nanopore/nanoDoc2_1/testrun/ecolirRNA.fa"
+    path = '/data/nanopore/rRNA/1623_ivt-multi/multifast5_2/workspace'
+    pathout = '/data/nanopore/nanoDoc2_1/varidate/1623_ivt'
+    #ref = "/data/nanopore/reference/NC000913.fa"
+    ref = "/data/nanopore/nanoDoc2_1/testrun/ecolirRNA.fa"
     fmercurrent = "/data/nanopore/signalStatRNA180.txt"
 
     # path = '/data/nanopore/rRNA/1825_ivt-multi/multifast5_2/workspace'
