@@ -30,7 +30,7 @@ def make6mer(refs,pqs,out,takeCnt,join):
         make6merParquetEach.makeSamplePlan(refs, pqs, out, takeCnt)
 
 @cmd.command()
-@click.option('-in', '--in6mmer')
+@click.option('-i', '--in6mmer')
 @click.option('-o', '--outdir')
 @click.option('-epochs', '--epochs',default=200)
 @click.option('-device', '--device')
@@ -40,7 +40,7 @@ def traincnn(in6mmer,outdir,samplesize,epochs,device='/GPU:0'):
     initialTraning.main(in6mmer,outdir,epochs,device)
 
 @cmd.command()
-@click.option('-in', '--in6mmer')
+@click.option('-i', '--in6mmer')
 @click.option('-o', '--outdir')
 @click.option('-epochs', '--epochs',default=50)
 @click.option('-device', '--device')
@@ -54,7 +54,7 @@ def traincnnAdd(in5mmer,outdir,epochs,device='/GPU:0'):
 @click.option('-d1', '--data1')
 @click.option('-d2', '--data2')
 @click.option('-o', '--outdir')
-@click.option('-in', '--weightdir')
+@click.option('-inw', '--weightdir')
 @click.option('-ssize', '--samplesize',default=12750)
 @click.option('-epochs', '--epochs',default=3)
 @click.option('-device', '--device')
