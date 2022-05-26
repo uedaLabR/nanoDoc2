@@ -46,6 +46,12 @@ def plotGraph(fin,out,ans,figsize=(23,4)):
     plt.ylim(-0.1, 1)
 
 
+    for n in range(len(scores)):
+
+        if n in answer:
+            print(n,max(scores[n-1],scores[n],scores[n+1]))
+
+
 if __name__ == "__main__":
 
 

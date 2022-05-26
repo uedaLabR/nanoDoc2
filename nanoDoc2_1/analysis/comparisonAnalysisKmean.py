@@ -228,12 +228,12 @@ def getFormat(dlist):
 def eachProcess(wfile, n, start,subs, strand, uplimit, refpr, targetpr,
                               model_t, fw, chrom,
                               chromtgt):
-
+    posadjust = 5
     weight_path = wfile + "/" +str(subs) + "/model_t_ep_2.h5"
     if not os.path.isfile(weight_path):
         #     no 6mer found
         print(weight_path)
-        infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n, str(subs), 0, 0, 0, 0)
+        infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n+posadjust, str(subs), 0, 0, 0, 0)
         print(infos)
         fw.writelines(infos + "\n")
         fw.flush()
@@ -245,7 +245,7 @@ def eachProcess(wfile, n, start,subs, strand, uplimit, refpr, targetpr,
         # reference signal
         retraces,refdatas, cntref, reinfos = refpr.getRowData(chrom, strand, n, cnt)
     except:
-        infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n, str(subs), 0, 0,  0)
+        infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n+posadjust, str(subs), 0, 0,  0)
         print(infos)
         fw.writelines(infos + "\n")
         fw.flush()
@@ -253,7 +253,7 @@ def eachProcess(wfile, n, start,subs, strand, uplimit, refpr, targetpr,
 
     #    reference start or end, or nodepth
     if  ((((n-start) < 25 ) and (cnt < 500 or cntref < 500 )) or (cnt < 5 or cntref < 5 or (rawdatas is None) or (refdatas is None))) :
-        infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n, str(subs), cnt, cnt,  0)
+        infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n+posadjust, str(subs), cnt, cnt,  0)
         print(infos)
         fw.writelines(infos + "\n")
         fw.flush()
@@ -279,7 +279,7 @@ def eachProcess(wfile, n, start,subs, strand, uplimit, refpr, targetpr,
     # score2  = getScoreFromDistanceComparison(xref, xrow, res)
     # scoreDisplay2 = '{:.7f}'.format(score2)
 
-    infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n, str(subs), cnt, cntref,scoreDisplay)
+    infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n+posadjust, str(subs), cnt, cntref,scoreDisplay)
     # print(n-4037519)
     print(infos)
     fw.writelines(infos + "\n")
