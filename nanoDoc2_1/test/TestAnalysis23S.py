@@ -18,7 +18,7 @@ import os
 if __name__ == '__main__':
 
 
-    wfile = "/data/nanopore/nanoDoc2_1/weight/docweight"
+    wfile = "/data/nanopore/nanoDoc2_1/varidate/docweight"
     paramf = "/data/param20.txt"
     # ref = "/data/nanopore/reference/NC000913.fa"
     # refpq = "/data/nanopore/nanoDoc2_1/1623_ivt"
