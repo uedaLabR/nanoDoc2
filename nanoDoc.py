@@ -35,7 +35,7 @@ def fast5ToReSegmentedPq(input,output,ref,fmercurrent,thread,qvalueThres,mappyop
 @click.option('-chrom', '--chrom',default="")
 @click.option('-s', '--start',default=1)
 @click.option('-e', '--end',default=-1)
-@click.option('-minreadlen', '--minreadlen',default=200)
+@click.option('-minreadlen', '--minreadlen',default=500)
 def analysis(wight,ref,refraw,tgraw,output,chrom,start,end,minreadlen):
 
     click.echo('modification call')

@@ -45,7 +45,7 @@ if __name__ == '__main__':
     strand = "+"
 
     chromtgt = chrom
-    minreadlen = 200
+    minreadlen = 500
     with tf.device('/CPU:0'):
         # os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
         # os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
