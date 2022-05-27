@@ -228,7 +228,7 @@ def getFormat(dlist):
 def eachProcess(wfile, n, start,subs, strand, uplimit, refpr, targetpr,
                               model_t, fw, chrom,
                               chromtgt):
-    posadjust = 5
+    posadjust = 4
     weight_path = wfile + "/" +str(subs) + "/model_t_ep_2.h5"
     if not os.path.isfile(weight_path):
         #     no 6mer found

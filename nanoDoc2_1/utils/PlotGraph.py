@@ -10,7 +10,6 @@ def getData(p):
     data.append(0)
     data.append(0)
     data.append(0)
-    data.append(0)
     for line in lines:
        if line.startswith("#"):
            continue
@@ -33,6 +32,7 @@ def getAns(p):
     return data
 
 import matplotlib.pyplot as plt
+import numpy as np
 def plotGraph(fin,out,ans,figsize=(23,4)):
 
     answer = getAns(ans)
@@ -49,7 +49,10 @@ def plotGraph(fin,out,ans,figsize=(23,4)):
     for n in range(len(scores)):
 
         if n in answer:
-            print(n,max(scores[n-1],scores[n],scores[n+1]))
+            #print(n,max(scores[n-2],scores[n-1],scores[n],scores[n+1],scores[+2]))
+            sudscore = scores[n-4:n+3]
+            max_index = np.argmax(sudscore) -4
+            print(n, max(sudscore),max_index)
 
 
 if __name__ == "__main__":
