@@ -16,14 +16,14 @@ def cmd():
 @click.option('-r', '--ref')
 @click.option('-fm', '--fmercurrent')
 @click.option('-t', '--thread', default=12)
-@click.option('-qv', '--qvalueThres', default=5)
+@click.option('-qv', '--qvaluethres', default=5)
 @click.option('-mo', '--mappyoption', nargs=4, type=int, default=(12, 10, 30, 20))
-def fast5ToReSegmentedPq(input,output,ref,fmercurrent,thread,qvalueThres,mappyoption):
+def fast5ToReSegmentedPq(input,output,ref,fmercurrent,thread,qvaluethres,mappyoption):
 
     print(input,output)
     click.echo('make resegmanted pq file')
     MAX_CORE = thread
-    fast5ToProcessedPq.h5tosegmantedPq(input,output,ref,MAX_CORE,qvalueThres,fmercurrent,mappyoption)
+    fast5ToProcessedPq.h5tosegmantedPq(input,output,ref,MAX_CORE,qvaluethres,fmercurrent,mappyoption)
 
 
 @cmd.command()

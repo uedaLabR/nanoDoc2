@@ -21,20 +21,20 @@ import nanoDoc2_1.trainprep.make6merParquetEach as make6merParquetEach
 @click.option('-p', '--pqs',multiple=True)
 @click.option('-o', '--out')
 @click.option('-j', '--join',default=False)
-@click.option('-takeCnt', '--samplesize',default=1200)
-def make6mer(refs,pqs,out,takeCnt,join):
+@click.option('-takecnt', '--samplesize',default=1200)
+def make6mer(refs,pqs,out,takecnt,join):
 
     if join:
-        make6merParquet.makeSamplePlan(refs, pqs, out, takeCnt)
+        make6merParquet.makeSamplePlan(refs, pqs, out, takecnt)
     else:
-        make6merParquetEach.makeSamplePlan(refs, pqs, out, takeCnt)
+        make6merParquetEach.makeSamplePlan(refs, pqs, out, takecnt)
 
 @cmd.command()
 @click.option('-i', '--in6mmer')
 @click.option('-o', '--outdir')
 @click.option('-epochs', '--epochs',default=200)
 @click.option('-device', '--device')
-def traincnn(in6mmer,outdir,samplesize,epochs,device='/GPU:0'):
+def traincnn(in6mmer,outdir,epochs,device='/GPU:0'):
 
     click.echo('trainCNN')
     initialTraning.main(in6mmer,outdir,epochs,device)
