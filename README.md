@@ -207,4 +207,4 @@ The output weights of this training are saved and later used for inference (as d
 2. Trained weight and reference sequence used in this study is deposited in the GitHub repository.
 3. Minimap2 parameters can be loosened for heavily modified RNA sequences.<br>Parameters for minimap can be set in the "-mo" option in the ‘fast5ToReSegmentedPq’ command described above. One could decrease those parameters if RNA is basecalled with a lot of error caused by heavy modifications.
 4. Current version is only applicable to plus strand, i.e. users need to prepare transcript sequence as a reference.
-5. Method *does not have single-base resolution*. **±1 position should also be considered** as a candidate for modification sites.
+5. Method *does not have single-base resolution*. **-4 to +2 position should also be considered** as a candidate for modification sites.
