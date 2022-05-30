@@ -1,3 +1,7 @@
+![image](https://user-images.githubusercontent.com/70622849/170928135-bccab8ba-6613-4665-9c9e-e296863b9a63.png)
+![image](https://user-images.githubusercontent.com/70622849/170928192-3c1788bd-c70a-4a08-89b8-7ae781fc4a00.png)
+
+
 ## README
 
 The software nanoDoc2 consists of three parts, the first part is sequence to signal assignment (or resquiggling), the second part is training using Deep-One-Class Algorithm and the third part is detection of RNA modification using neural network and clustering algorithms. A typical user can use only the first and third part to detect RNA modification with parameters from the learned model obtained from the second part.
