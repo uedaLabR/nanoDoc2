@@ -18,7 +18,7 @@ To install nanoDoc2 and pre-required python libraries, execute the following com
 
 ```shell
 $ git clone https://github.com/uedaLabR/nanoDoc2.git  
-$ cd nanoDoc2/src
+$ cd nanoDoc2
 $ python3 -m venv venv3
 $ source venv3/bin/activate
 (venv3) $ pip install --upgrade pip
