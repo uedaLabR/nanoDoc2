@@ -8,8 +8,7 @@ charset-normalizer==2.0.11
 clang==5.0
 click==8.0.4
 cycler==0.11.0
-dataclasses==0.8
-faiss==1.5.3
+dataclasses==0.6
 faiss-gpu==1.7.2
 fileReader==0.0.0
 flatbuffers==1.12
@@ -32,7 +31,7 @@ mappy==2.23
 Markdown==3.3.6
 matplotlib==3.3.4
 numba==0.53.1
-numpy==1.19.5
+numpy==1.19.2
 oauthlib==3.2.0
 ont-fast5-api==4.0.0
 opt-einsum==3.3.0
