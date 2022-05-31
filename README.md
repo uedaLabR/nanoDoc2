@@ -33,17 +33,17 @@ To download the pre-learned weight, execute the following command (if you train 
 
 Get 4 archive files of learned weight ZENODE( https://zenodo.org/), where each file is about the size of 28GB.
 
-https://zenodo.org/record/6583336/files/weight_A.tar.gz
-https://zenodo.org/record/6586529/files/weight_T.tar.gz
-https://zenodo.org/record/6587256/files/weight_C.tar.gz
-https://zenodo.org/record/6588796/files/weight_G.tar.gz
+https://zenodo.org/record/6583336/files/weight_A.tar.gz <br>
+https://zenodo.org/record/6586529/files/weight_T.tar.gz <br>
+https://zenodo.org/record/6587256/files/weight_C.tar.gz <br>
+https://zenodo.org/record/6588796/files/weight_G.tar.gz <br>
 
 Place these four files to the ./weight6mer directory. Alternatively, you can use wget command to download these files to the  ./weight6mer directory.
 
-(venv3) $ wget https://zenodo.org/record/6583336/files/weight_A.tar.gz .
-(venv3) $ wget https://zenodo.org/record/6586529/files/weight_T.tar.gz .
-(venv3) $ wget https://zenodo.org/record/6587256/files/weight_C.tar.gz .
-(venv3) $ wget https://zenodo.org/record/6588796/files/weight_G.tar.gz .
+(venv3) $ wget https://zenodo.org/record/6583336/files/weight_A.tar.gz .  <br>
+(venv3) $ wget https://zenodo.org/record/6586529/files/weight_T.tar.gz .  <br>
+(venv3) $ wget https://zenodo.org/record/6587256/files/weight_C.tar.gz .  <br>
+(venv3) $ wget https://zenodo.org/record/6588796/files/weight_G.tar.gz .  <br>
 
 To extract archive files and remove archive files after extraction, execute the following commands: 
 
