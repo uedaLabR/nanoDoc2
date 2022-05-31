@@ -41,13 +41,14 @@ def traincnn(in6mmer,outdir,epochs,device='/GPU:0'):
 
 @cmd.command()
 @click.option('-i', '--in6mmer',required='True')
+@click.option('-inw', '--weightdir',required='True')
 @click.option('-o', '--outdir',required='True')
 @click.option('-epochs', '--epochs',default=200)
 @click.option('-device', '--device')
-def traincnnAdd(in5mmer,outdir,epochs,device='/GPU:0'):
+def traincnnAdd(in5mmer,weightdir,outdir,epochs,device='/GPU:0'):
 
     click.echo('trainCNN Dec')
-    initialTrainingDec.main(in5mmer,outdir,epochs,device)
+    initialTrainingDec.main(in5mmer,weightdir,outdir,epochs,device)
 
 
 @cmd.command()
