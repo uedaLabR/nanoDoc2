@@ -21,9 +21,12 @@ def getData(p):
 
 def getAns(p):
 
+    data = []
+    if p is None:
+        return data
+
     f = open(p)
     lines = f.readlines()
-    data = []
     for line in lines:
        line = line.split("\t")
        pos = float(line[0])

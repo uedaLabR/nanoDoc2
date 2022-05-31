@@ -11,13 +11,13 @@ def cmd():
 
 
 @cmd.command()
-@click.option('-i', '--input')
-@click.option('-o', '--output')
-@click.option('-r', '--ref')
-@click.option('-fm', '--fmercurrent')
+@click.option('-i', '--input',required='True')
+@click.option('-o', '--output',required='True')
+@click.option('-r', '--ref',required='True')
+@click.option('-fm', '--fmercurrent',required='True')
 @click.option('-t', '--thread', default=12)
 @click.option('-qv', '--qvaluethres', default=5)
-@click.option('-mo', '--mappyoption', nargs=4, type=int, default=(12, 10, 30, 20))
+@click.option('-mo', '--mappyoption', nargs=4, type=click.Tuple([int,int,int,int]), default=(12, 10, 30, 20))
 def fast5ToReSegmentedPq(input,output,ref,fmercurrent,thread,qvaluethres,mappyoption):
 
     print(input,output)
@@ -27,11 +27,11 @@ def fast5ToReSegmentedPq(input,output,ref,fmercurrent,thread,qvaluethres,mappyop
 
 
 @cmd.command()
-@click.option('-w', '--wight')
-@click.option('-r', '--ref')
-@click.option('-rpq', '--rpq')
-@click.option('-tgpq', '--tgpq')
-@click.option('-o', '--output')
+@click.option('-w', '--wight',required='True')
+@click.option('-r', '--ref',required='True')
+@click.option('-rpq', '--rpq',required='True')
+@click.option('-tgpq', '--tgpq',required='True')
+@click.option('-o', '--output',required='True')
 @click.option('-chrom', '--chrom',default="")
 @click.option('-s', '--start',default=1)
 @click.option('-e', '--end',default=-1)
@@ -47,11 +47,14 @@ def analysis(wight,ref,refraw,tgraw,output,chrom,start,end,minreadlen):
     nanoDocAnalysis.modCall(wight, ref, refraw,tgraw, output, chrom, chrom, start, end,minreadlen)
 
 @cmd.command()
-@click.option('-f', '-fin')
+@click.option('-f', '-fin',required='True')
 @click.option('-o', '-fout')
 @click.option('-a', '--ans')
-@click.option('-s', '--figsize', nargs=2, type=int, default=(16, 4))
+@click.option('-s', '--figsize', nargs=2, type=click.Tuple([int,int]), default=(16, 4))
 def plotGraph(fin, fout, ans, figsize):
+
+    if fout is None:
+        fout = os.path.dirname(fin) +"/result.png"
 
     PlotGraph.plotGraph(fin, fout, ans, figsize)
 
