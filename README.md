@@ -211,11 +211,17 @@ This will take about 12 hours of execution time using two Nvidia A100 GPUs.
 In the next step, train the Wavenet network by stacking an encoder-decoder at the end (for 50 epochs in this case). Note that during this phase the layers already trained above are not trained further (transfer learning approach). After this, throw away the decoder part and use encoder-fused Wavenet as our DOC classifier. This dimensionality reduction is done via:
 
 ```bash
-python ./nanoDocPrep.py traincnnAdd					\
-				-i /path/to/inittrain.pq			\
-				-o /path/to/outputweight			\
-				-epoches 200						\
-				-device /GPU:0
+python ./nanoDocPrep.py traincnnadd				\
+			-i /path/to/init_train6mer.pq			\
+-inw /path/to/inweight	_dir			\
+			-o /path/to/outputweight_dir2			\
+			-epoches 200					\
+			-device /GPU:0
+
+	   where  -inw, “inweight_dir” is the  “outputweight_dir” in  
+                           the previous “traincnn” command.
+
+
 ```
 
 This will take about 24 hours of execution time using two Nvidia A100 GPUs.
@@ -233,6 +239,9 @@ python ./nanoDocPrep.py traindoc			\
 			-ssize 12750					\
  			-epoches 3						\
 			-device /GPU:0
+			
+  where  “outputweight” is the  “outputweight” in  
+                           the previous “traincnn” command.			
 ```
 
 where,<br> 		-ssize is the number of reads for each 6-mer used in DOC training (default 12750).
