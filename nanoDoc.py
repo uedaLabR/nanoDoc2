@@ -47,8 +47,8 @@ def analysis(weight,ref,rpq,tgpq,output,transcriptid,start,end,minreadlen):
     nanoDocAnalysis.modCall(weight, ref, rpq,tgpq, output, transcriptid, transcriptid, start, end,minreadlen)
 
 @cmd.command()
-@click.option('-f', '-fin',required='True')
-@click.option('-o', '-fout')
+@click.option('-f', '--fin',required='True')
+@click.option('-o', '--fout')
 @click.option('-a', '--ans')
 @click.option('-s', '--figsize', nargs=2, type=click.Tuple([int,int]), default=(16, 4))
 def plotGraph(fin, fout, ans, figsize):
