@@ -27,7 +27,7 @@ def fast5ToReSegmentedPq(input,output,ref,fmercurrent,thread,qvaluethres,mappyop
 
 
 @cmd.command()
-@click.option('-w', '--wight',required='True')
+@click.option('-w', '--weight',required='True')
 @click.option('-r', '--ref',required='True')
 @click.option('-rpq', '--rpq',required='True')
 @click.option('-tgpq', '--tgpq',required='True')
@@ -36,15 +36,15 @@ def fast5ToReSegmentedPq(input,output,ref,fmercurrent,thread,qvaluethres,mappyop
 @click.option('-s', '--start',default=1)
 @click.option('-e', '--end',default=-1)
 @click.option('-minreadlen', '--minreadlen',default=500)
-def analysis(wight,ref,refraw,tgraw,output,chrom,start,end,minreadlen):
+def analysis(weight,ref,rpq,tgpq,output,transcriptid,start,end,minreadlen):
 
     click.echo('modification call')
     p_sub = pathlib.Path(output)
     if not os.path.exists(p_sub.parent):
         os.mkdir(p_sub.parent)
-    print(refraw)
-    print(tgraw)
-    nanoDocAnalysis.modCall(wight, ref, refraw,tgraw, output, chrom, chrom, start, end,minreadlen)
+    print(rpq)
+    print(tgpq)
+    nanoDocAnalysis.modCall(weight, ref, rpq,tgpq, output, transcriptid, transcriptid, start, end,minreadlen)
 
 @cmd.command()
 @click.option('-f', '-fin',required='True')

@@ -40,9 +40,12 @@ from Bio import SeqIO
 
 def getSeq(ref, chrtgt, start, end, strand):
     records = SeqIO.parse(ref, 'fasta')
+    record = None
     for r in records:
         if r.id == chrtgt:
             record = r
+    if record is None:
+        return None
     seq = record.seq[start:end]
     if strand == "-":
         seq2 = Seq(str(seq))

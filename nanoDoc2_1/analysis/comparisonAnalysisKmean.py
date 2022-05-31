@@ -296,6 +296,10 @@ def modCall(wfile, ref, refpq, targetpq, out, chrom, chromtgt, start, end, minre
         print("modcallinit", chrom)
     strand = "+"
     seq = nanoDocUtils.getSeq(ref, chrom, start, end, strand)
+    if seq is None:
+        print("transcript "+ref+" does not exist in the reference")
+        return
+
     if start < 0:
         start = 1
     if end < 0:
