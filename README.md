@@ -59,6 +59,7 @@ To download the pre-learned weight, execute the following command:
 The inference workflow can be split into three steps. First, we need to prepare properly segmented data by using genomic mapper (based on experimental basecalled nanopore data) like Minimap2 followed by Viterbi resquiggling algorithm. Then segmented experimental long-read and IVT data are fed to the DOC classifier. All output from experimental and IVT data for a fixed genomic location are then compiled to a list of outputs, which is then subjected to k-means clustering in the third step. This clustering is repeated for each genomic location. The presence of modification at a genomic location is deduced by analyzing the biases of abundance of IVT or experimental data in clusters which is converted to a modification score. To visualize the prediction of modification, one can plot such scores to generate a modification probability plot.
 
 ![Fig 4](./docimage/f5.png)
+![Fig 5](./docimage/f5.1.png)
 
 Issue following command for mapping reads to the reference and segmentation:
 
