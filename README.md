@@ -64,12 +64,12 @@ The inference workflow can be split into three steps. First, we need to prepare 
 Issue following command for mapping reads to the reference and segmentation:
 
 ```bash
-python ./nanoDoc.py fast5ToReSegmentedPq 					\
-			-i /path/to/multifast5							\
-			-o /path/to/out/out1.pq 						\
-			-r /path/to/out/ref.fa 							\
-			-fm /path/to/fmer_current						\
-			-t 5 -qv 5										\
+python ./nanoDoc.py fast5ToReSegmentedPq 		\
+			-i /path/to/multifast5		\
+			-o /path/to/out/out1.pq 	\
+			-r /path/to/out/ref.fa 		\
+			-fm /path/to/fmer_current	\
+			-t 5 -qv 5			\
 			-mo 12 10 30 20
 ```
 
@@ -80,13 +80,13 @@ Repeat the procedure for the experimental sample of interest and unmodified IVT 
 For modification detection run following command:
 
 ``` bash
-python ./nanoDoc.py analysis 							\			
-			-w /path/to/weight 							\
-			-r /path/to/ref								\				
-			-rpq /path/to/IVT parquet file				\	
-			-tgpq /path/to/target parquet file			\
-			-o /path/to/output result file				\
-			-tsid ecoli16s  							\
+python ./nanoDoc.py analysis 					\			
+			-w /path/to/weight 			\
+			-r /path/to/ref				\				
+			-rpq /path/to/IVT parquet file		\	
+			-tgpq /path/to/target parquet file	\
+			-o /path/to/output result file		\
+			-tsid ecoli16s  			\
 			-s 1 -e 1600 -minreadlen 200
 ```
 
@@ -97,10 +97,10 @@ This will take a few hours of execution time depending on the size of the transc
 The output from nanodoc2 contains 5 columns: position or genomic position, 6-mer, IVT depth, WT depth and score, where IVT and WT depth refers to the number of reads used for analysis from IVT and WT data, respectively. It can be plotted by:
 
 ```bash
-python ./nanoDoc.py plotGraph 					\
- 			-f /path/to/result file				\
- 			-o /path/to/output.png				\
- 			-a /path/to/known-site				\
+python ./nanoDoc.py plotGraph 				\
+ 			-f /path/to/result file		\
+ 			-o /path/to/output.png		\
+ 			-a /path/to/known-site		\
  			-s 16 4
 ```
 
@@ -114,10 +114,10 @@ Use the following script to prepare 6-mer data from the IVT data already obtaine
 
 ```bash
 python ./nanoDocPrep.py make6mer			\
-			-r /path/to/reference file		\
-			-p /path/to/parquet file		\
-			-o /path/to/output 				\
-			-j False						\
+			-r /path/to/reference file	\
+			-p /path/to/parquet file	\
+			-o /path/to/output 		\
+			-j False			\
 			-takeCnt 1200
 ```
 
@@ -126,8 +126,8 @@ where,<br>		-r path to reference file, fasta format (can be multiple),<br>		-p p
 An example of this data preparation step is as follows:
 
 ```bash
-python ./nanoDocPrep.py make6mer										\
-			-r /path/to/ref1.fa  -r /path/to/ref2.fa					\
+python ./nanoDocPrep.py make6mer							\
+			-r /path/to/ref1.fa  -r /path/to/ref2.fa			\
 			-p /path/to/parquet1.pq  -p /path/to/parquet2.pq -j True	\
 			-o  /path/to/init_train6mer.pq	-takeCnt 1200
 ```
@@ -135,10 +135,10 @@ python ./nanoDocPrep.py make6mer										\
 The Network is pre-trained before actual DOC classification with weight sharing. For this we need to prepare an initial 6-mer dataset separately:
 
 ```bash
-python ./nanoDocPrep.py make6mer										\
-			-r /path/to/ref1.fa -r /path/to/ref2.fa						\
-			-p /path/to/parquet1.pq -p /path/to/parquet2.pq				\
-			-o /path/to/inittrain.pq									\
+python ./nanoDocPrep.py make6mer							\
+			-r /path/to/ref1.fa -r /path/to/ref2.fa				\
+			-p /path/to/parquet1.pq -p /path/to/parquet2.pq			\
+			-o /path/to/inittrain.pq					\
 			-j True -takeCnt 1200
 ```
 
@@ -147,18 +147,18 @@ Note that DOC architecture includes two Wavenet-based neural networks. To save t
 For the target network,
 
 ```bash
-python ./nanoDocPrep.py make6merEach									\
-				-r /path/to/ref1.fa  -r /path/to/ref2.fa				\
-				-p /path/to/parquet1.pq -p /path/to/parquet2.pq			\
+python ./nanoDocPrep.py make6merEach							\
+				-r /path/to/ref1.fa  -r /path/to/ref2.fa		\
+				-p /path/to/parquet1.pq -p /path/to/parquet2.pq		\
 				-o  /path/to/doctrain1 -takeCnt 12750
 ```
 
 For the secondary network,
 
 ```bash
-python ./nanoDocPrep.py make6merEach									\
-				-r /path/to/ref1.fa -r /path/to/ref2.fa					\
-				-p /path/to/parquet1.pq -p /path/to/parquet3.pq			\
+python ./nanoDocPrep.py make6merEach							\
+				-r /path/to/ref1.fa -r /path/to/ref2.fa			\
+				-p /path/to/parquet1.pq -p /path/to/parquet3.pq		\
 				-o /path/to/doctrain2 -takeCnt 50
 ```
 
@@ -171,8 +171,8 @@ Pre-train the Wavenet network in two steps. In the first step, featurize each in
 ```bash
 python ./nanoDocPrep.py traincnn					\
 				-i path/to/init_train6mer.pq		\
-				-o /path/to/outputweight			\
-				-epoches 100						\
+				-o /path/to/outputweight		\
+				-epoches 100				\
 				-device /GPU:0
 ```
 
@@ -185,7 +185,7 @@ python ./nanoDocPrep.py traincnnAdd					\
 				-i /path/to/init_train6mer.pq		\
 				-inw /path/to/inweight	_dir		\
 				-o /path/to/outputweight_dir2		\
-				-epoches 200						\
+				-epoches 200				\
 				-device /GPU:0
 ```
 where, -inw, “inweight_dir” is the “outputweight_dir” in the previous “traincnn” command.<br>
@@ -197,12 +197,12 @@ After initial training of the DOC classifier network two instances of such a net
 
 ```bash
 python ./nanoDocPrep.py traindoc			\
-			-d1 /path/to/inittrain2.pq		\
-			-d2 /path/to/inittrain3.pq		\
+			-d1 /path/to/inittrain2.pq	\
+			-d2 /path/to/inittrain3.pq	\
 			-o /path/to/output_weightdir	\
 			-inw /path/to/inweight	_dir	\
-			-ssize 12750					\
- 			-epoches 3						\
+			-ssize 12750			\
+ 			-epoches 3			\
 			-device /GPU:0
 ```
 
