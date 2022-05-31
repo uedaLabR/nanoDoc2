@@ -32,7 +32,7 @@ def fast5ToReSegmentedPq(input,output,ref,fmercurrent,thread,qvaluethres,mappyop
 @click.option('-rpq', '--rpq',required='True')
 @click.option('-tgpq', '--tgpq',required='True')
 @click.option('-o', '--output',required='True')
-@click.option('-chrom', '--chrom',default="")
+@click.option('-tsid', '--transcriptid',default="")
 @click.option('-s', '--start',default=1)
 @click.option('-e', '--end',default=-1)
 @click.option('-minreadlen', '--minreadlen',default=500)
