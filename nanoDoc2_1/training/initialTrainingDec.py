@@ -104,7 +104,7 @@ def _main(in5mmer,indir,outdir,epochs):
 
     df = loadpq(in5mmer)
     train_x, test_x, train_y, test_y, num_classes = prepData(df)
-    inweight = indir + "weightwn.hdf"
+    inweight = indir + "/weightwn.hdf"
     model = CnnWavenetDecDimention.build_network(shape=shape1, num_classes=num_classes,inweight=inweight)
     model.summary()
 

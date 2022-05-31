@@ -21,7 +21,7 @@ import nanoDoc2_1.trainprep.make6merParquetEach as make6merParquetEach
 @click.option('-p', '--pqs',multiple=True,required='True')
 @click.option('-o', '--out',required='True')
 @click.option('-j', '--join',default=False)
-@click.option('-takecnt', '--samplesize',default=1200)
+@click.option('-takecnt', '--takecnt',default=1200)
 def make6mer(refs,pqs,out,takecnt,join):
 
     if join:
@@ -32,7 +32,7 @@ def make6mer(refs,pqs,out,takecnt,join):
 @cmd.command()
 @click.option('-i', '--in6mmer',required='True')
 @click.option('-o', '--outdir',required='True')
-@click.option('-epochs', '--epochs',default=200)
+@click.option('-epochs', '--epochs',default=100)
 @click.option('-device', '--device')
 def traincnn(in6mmer,outdir,epochs,device='/GPU:0'):
 
@@ -42,7 +42,7 @@ def traincnn(in6mmer,outdir,epochs,device='/GPU:0'):
 @cmd.command()
 @click.option('-i', '--in6mmer',required='True')
 @click.option('-o', '--outdir',required='True')
-@click.option('-epochs', '--epochs',default=50)
+@click.option('-epochs', '--epochs',default=200)
 @click.option('-device', '--device')
 def traincnnAdd(in5mmer,outdir,epochs,device='/GPU:0'):
 
