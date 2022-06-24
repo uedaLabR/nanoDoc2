@@ -18,14 +18,15 @@ import os
 if __name__ == '__main__':
 
 
-    wfile = "/data/nanopore/nanoDoc2_1/weight/docweight"
+    #wfile = "/data/nanopore/nanoDoc2_1/weight/docweight"
+    wfile = "/data/nanopore/nanoDoc2_1/varidate/docweight"
     paramf = "/data/param20.txt"
     # ref = "/data/nanopore/reference/S288C_reference_sequence_R1-1-1_19960731.fa"
     # ref = "/data/nanopore/reference/Yeast_sk1.fa"
     ref = "/data/nanopore/nanoDoc2_1/testrun/yeastrRNA.fa"
-    refpq = "/data/nanopore/nanoDoc2_1/testrun/1825_ivt"
-    targetpq = "/data/nanopore/nanoDoc2_1/testrun/1825_native"
-    out = "/data/nanopore/nanoDoc2_1/testrun/25S_score.txt"
+    refpq = "/data/nanopore/nanoDoc2_1/varidate/1825_ivt"
+    targetpq = "/data/nanopore/nanoDoc2_1/varidate/1825_native"
+    out = "/data/nanopore/nanoDoc2_1/varidate/25S_score.txt"
 
     chrom = "yeast25S"
     chromtgt = "yeast25S"
@@ -46,4 +47,6 @@ if __name__ == '__main__':
         # os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
         # os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-        comparisonAnalysisKmean.modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, end, strand, minreadlen)
+        comparisonAnalysisKmean.modCall(wfile, ref, refpq, targetpq, out, chrom, chromtgt, start, end, minreadlen,
+                                        uplimit=500)
+        #comparisonAnalysisKmean.modCall(wfile, paramf, ref, refpq, targetpq, out, chrom, chromtgt, start, end, strand, minreadlen)

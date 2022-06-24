@@ -18,7 +18,8 @@ from nanoDoc2.utils import nanoDocUtils as nutils
 
 def get_number_of_core(MAX_CORE:int):
 
-    ncore = multiprocessing.cpu_count()
+    ncore = int(multiprocessing.cpu_count())
+    print(ncore,MAX_CORE)
     if ncore > MAX_CORE:
         ncore = MAX_CORE
     return ncore
@@ -43,6 +44,7 @@ def preprocess(f5file,pathout,ref,ncore,qvaluethres,fmercurrent,mappyoption):
                 row_data = read.get_raw_data(scale=True)
 
                 #
+                #print(fastq)
                 seq = fastq.split("\n")[1]
                 chrom, strand, r_st, r_en, q_st, q_en, cigar_str = "", 0, 0, 0, 0, 0, ""
                 for hit in aligner.map(seq):
@@ -54,7 +56,7 @@ def preprocess(f5file,pathout,ref,ncore,qvaluethres,fmercurrent,mappyoption):
                     q_st = hit.q_st
                     q_en = hit.q_en
                     cigar_str = hit.cigar_str
-                    #print(chrom,strand,r_st)
+                    print(chrom,strand,r_st,r_en)
                     read = nanoDocRead(read.read_id, chrom, strand, r_st, r_en, q_st, q_en, cigar_str, fastq, trace, move,
                                 row_data)
 

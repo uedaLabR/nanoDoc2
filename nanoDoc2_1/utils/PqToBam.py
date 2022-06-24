@@ -181,7 +181,25 @@ if __name__ == "__main__":
     # ref = "/data/nanopore/reference/NC000913.fa"
     # path = '/data/nanopore/nanoDoc2/1623_ivt'
     # pathout = "/data/nanopore/nanoDoc2/1623_ivt.bam"
-    ref = "/data/nanopore/reference/Yeast_sk1.fa"
-    path = '/data/nanopore/nanoDoc2_1/bk/1825_ivt'
-    pathout = "/data/nanopore/nanoDoc2_1/1825_ivt.bam"
+    # ref = "/data/nanopore/reference/Yeast_sk1.fa"
+    # path = '/data/nanopore/nanoDoc2_1/bk/1825_ivt'
+    # pathout = "/data/nanopore/nanoDoc2_1/1825_ivt.bam"
+    # ref = "/data/project/dataFromNanoCompare/fa/oligo.fa"
+    # path = '/data/nanopore/nanoDoc2_1/varidate/additional/Oligo3'
+    # pathout = "/data/nanopore/nanoDoc2_1/varidate/additional/Oligo3.bam"
+
+    # ref = "/data/project/dataFromNanoCompare/fa/oligo.fa"
+    ref = "/data/project/dataFromNanoCompare/fa/7SK.fa"
+    path = '/data/nanopore/nanoDoc2_1/varidate/additional/7SKIVT'
+    pathout = "/data/nanopore/nanoDoc2_1/varidate/additional/7SKIVT.bam"
+    toBam(ref,path,pathout)
+
+    ref = "/data/project/dataFromNanoCompare/fa/7SK.fa"
+    path = '/data/nanopore/nanoDoc2_1/varidate/additional/ncRNAWT'
+    pathout = "/data/nanopore/nanoDoc2_1/varidate/additional/ncRNAWT.bam"
+    toBam(ref,path,pathout)
+
+    ref = "/data/project/dataFromNanoCompare/fa/7SK.fa"
+    path = '/data/nanopore/nanoDoc2_1/varidate/additional/ncRNAMETTL3KD'
+    pathout = "/data/nanopore/nanoDoc2_1/varidate/additional/ncRNAMETTL3KD.bam"
     toBam(ref,path,pathout)

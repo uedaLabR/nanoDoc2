@@ -48,9 +48,6 @@ def flipplopViterbiEach(lgenome, chrom, strand, orgcigar,r_st, r_en, q_st, q_en,
     return seq, cigar, left, traceoffset, traceboundary, frombasecaller_idx, possiblemove_idx
 
 
-
-
-
 import signalalign.OutputUtils as ou
 from numba.typed import List
 import pysam

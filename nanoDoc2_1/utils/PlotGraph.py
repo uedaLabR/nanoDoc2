@@ -65,8 +65,21 @@ if __name__ == "__main__":
     # ans = '/data/nanopore/nanoDoc2_1/testrun/16sans.txt'
     # out = '/data/nanopore/nanoDoc2_1/varidate/16sout2.png'
     # figsize = (16, 4)
-    fin = '/data/nanopore/nanoDoc2_1/varidate/23S_score.txt'
-    ans = '/data/nanopore/nanoDoc2_1/testrun/23sans.txt'
-    out = '/data/nanopore/nanoDoc2_1/varidate/23sout2.png'
+    # fin = '/data/nanopore/nanoDoc2_1/varidate/23S_score.txt'
+    # ans = '/data/nanopore/nanoDoc2_1/testrun/23sans.txt'
+    # out = '/data/nanopore/nanoDoc2_1/varidate/23sout2.png'
+
+    # fin = '/data/nanopore/nanoDoc2_1/varidate/25S_score.txt'
+    # ans = '/data/nanopore/nanoDoc2_1/testrun/25sans.txt'
+    # out = '/data/nanopore/nanoDoc2_1/varidate/25sout.png'
+
+    # fin = '/data/nanopore/nanoDoc2_1/varidate/18S_score.txt'
+    # ans = '/data/nanopore/nanoDoc2_1/testrun/18sans.txt'
+    # out = '/data/nanopore/nanoDoc2_1/varidate/18sout.png'
+
+    fin = '/data/nanopore/nanoDoc2_1/varidate/Oligo3'
+    ans = '/data/nanopore/nanoDoc2_1/varidate/additional/answer/oligo3ans.txt'
+    out = '/data/nanopore/nanoDoc2_1/varidate/Oligo3.png'
+
     figsize = (23, 4)
     plotGraph(fin,out,ans,figsize)

@@ -229,7 +229,7 @@ def eachProcess(wfile, n, start,subs, strand, uplimit, refpr, targetpr,
                               model_t, fw, chrom,
                               chromtgt):
     posadjust = 4
-    weight_path = wfile + "/" +str(subs) + "/model_t_ep_2.h5"
+    weight_path = wfile + "/" +str(subs.replace("U","T")) + "/model_t_ep_2.h5"
     if not os.path.isfile(weight_path):
         #     no 6mer found
         print(weight_path)
@@ -252,17 +252,22 @@ def eachProcess(wfile, n, start,subs, strand, uplimit, refpr, targetpr,
         return (0,0)
 
     #    reference start or end, or nodepth
-    if  ((((n-start) < 25 ) and (cnt < 500 or cntref < 500 )) or (cnt < 5 or cntref < 5 or (rawdatas is None) or (refdatas is None))) :
-        infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n+posadjust, str(subs), cnt, cnt,  0)
+    # if  ((((n-start) < 25 ) and (cnt < 500 or cntref < 500 )) or (cnt < 5 or cntref < 5 or (rawdatas is None) or (refdatas is None))) :
+    #     infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n+posadjust, str(subs), cnt, cnt,  0)
+    #     print(infos)
+    #     fw.writelines(infos + "\n")
+    #     fw.flush()
+    #     return (cnt, cntref)
+    model_t.load_weights(weight_path)
+    if cntref < cnt and cntref > 0:
+        rawdatas, cnt = nanoDocUtils.reducesize(rawdatas, cntref)  # raw data have the same size as reference data
+
+    if cntref == 0:
+        infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n+posadjust, str(subs), 0, 0,  0)
         print(infos)
         fw.writelines(infos + "\n")
         fw.flush()
-        return (cnt, cntref)
-
-    model_t.load_weights(weight_path)
-    if cntref < cnt:
-        rawdatas, cnt = nanoDocUtils.reducesize(rawdatas, cntref)  # raw data have the same size as reference data
-
+        return (0,0)
 
     refdata = getFormat(refdatas)
     rowdata = getFormat(rawdatas)
@@ -270,8 +275,17 @@ def eachProcess(wfile, n, start,subs, strand, uplimit, refpr, targetpr,
     #
     #k = 3
     niter = 20
-    xref = model_t.predict(refdata)
-    xrow = model_t.predict(rowdata)
+
+
+    try:
+        xref = model_t.predict(refdata)
+        xrow = model_t.predict(rowdata)
+    except:
+        infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n+posadjust, str(subs), 0, 0,  0)
+        print(infos)
+        fw.writelines(infos + "\n")
+        fw.flush()
+        return (0,0)
 
     score = getScoreFromCluster(xref, xrow, niter)
     scoreDisplay = '{:.7f}'.format(score)
@@ -305,8 +319,8 @@ def modCall(wfile, ref, refpq, targetpq, out, chrom, chromtgt, start, end, minre
     if end < 0:
         end = len(seq)
 
-    refpr = PqReader(refpq, ref,minreadlen,strand, start, end, IndelStrict=True) # Assume
-    targetpr = PqReader(targetpq,ref,minreadlen,strand, start, end ,IndelStrict=True)
+    refpr = PqReader(refpq, ref,minreadlen,strand, start, end, maxreads = uplimit,IndelStrict=True) # Assume
+    targetpr = PqReader(targetpq,ref,minreadlen,strand, start, end ,maxreads = uplimit,IndelStrict=True)
     model_t = getModel()
 
     fw = open(out, mode='w')

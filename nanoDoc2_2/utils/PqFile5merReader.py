@@ -160,8 +160,8 @@ def binTrace(trace, trimlength):
         return np.pad(trace, (half,left), 'constant')
 
 
-DATA_LENGTH = 1024
-DATA_LENGTH_Trace = 100
+DATA_LENGTH = 768
+DATA_LENGTH_Trace = 80
 def binned(trimtrace, traceItv,trimUnitLength,rseq,signal):
 
     bintrace = binTrace(trimtrace,DATA_LENGTH_Trace)
@@ -664,7 +664,7 @@ class PqReader:
         SignalUNIT = 10
         #print(traceItv)
         tracestart = traceItv[0]
-        traceend = traceItv[-1]
+        traceend = traceItv[-2]
         trace_t = trace[tracestart:traceend]
         signal_t = signal[tracestart*SignalUNIT:traceend*SignalUNIT]
 

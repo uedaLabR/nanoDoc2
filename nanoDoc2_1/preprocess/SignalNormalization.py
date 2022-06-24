@@ -53,6 +53,28 @@ def getMeans(signal,traceboundary,cigar,seqlen):
     return means
 
 
+import pysam
+
+
+def cigarcorrect(lgenome, cigar):
+    a = pysam.AlignedSegment()
+    a.cigarstring = cigar
+    refpos = 0
+    outg = ""
+    for cigaroprator, cigarlen in a.cigar:
+
+        if cigaroprator == 0:  # match
+
+            if refpos + cigarlen < len(lgenome):
+                subg = lgenome[refpos:refpos + cigarlen]
+            else:
+                subg = lgenome[refpos:]
+
+            outg = outg + subg
+            refpos = refpos + cigarlen
+
+    return outg
+
 def theoryMean(fmerDict,lgenome,strand):
 
     means = []
@@ -88,7 +110,7 @@ def predictShift(a,b):
     max = 0
     ar = None
     br = None
-    for n in range(-3,3):
+    for n in range(-3,-1):
 
         bmod = moda(b,n)
         if len(a) > len(bmod):
@@ -243,19 +265,42 @@ def format(signal):
     return signal
 
 
+import pysam
+
+
+def cigarcorrect(lgenome, cigar):
+    a = pysam.AlignedSegment()
+    a.cigarstring = cigar
+    refpos = 0
+    outg = ""
+    for cigaroprator, cigarlen in a.cigar:
+
+        if cigaroprator == 0:  # match
+
+            if refpos + cigarlen < len(lgenome):
+                subg = lgenome[refpos:refpos + cigarlen]
+            else:
+                subg = lgenome[refpos:]
+
+            outg = outg + subg
+            refpos = refpos + cigarlen
+
+    return outg
+
 from scipy.interpolate import interp1d
 def _normalizeSignal(read,traceboundary,fmerDict):
 
 
-
     lgenome = read.refgenome
+
+
     signal = read.signal
     strand = read.strand
     cigar = read.cigar_str
 
     signalmeans = getMeans(signal,traceboundary,cigar,len(lgenome))
-
-    theorymean = theoryMean(fmerDict, lgenome ,strand)
+    cigarcorrected = cigarcorrect(lgenome,cigar)
+    theorymean = theoryMean(fmerDict, cigarcorrected ,strand)
     shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
     if signalmeans is None:
         return signal
@@ -303,7 +348,8 @@ def normalizeSignal_as_whole(read,traceboundary,fmerDict):
     cigar = read.cigar_str
 
     signalmeans = getMeans(signal,traceboundary,cigar,len(lgenome))
-    theorymean = theoryMean(fmerDict, lgenome,strand)
+    cigarcorrected = cigarcorrect(lgenome,cigar)
+    theorymean = theoryMean(fmerDict, cigarcorrected ,strand)
     shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
 
     if signalmeans is None:
