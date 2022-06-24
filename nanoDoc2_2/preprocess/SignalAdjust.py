@@ -211,11 +211,16 @@ def replaceList(signalInterval ,indexes,size):
 
         # start = signalInterval.index(indexes[0])
         start = np.where(signalInterval == indexes[0])[0]
+        if len(start) == 0:
+            print("Error in replace key " ,indexes[0] )
+            print(signalInterval)
+            return signalInterval,False
+
         start = int(start[0])
 
         end = start + size
         signalInterval[start:end] = indexes
-        return signalInterval
+        return signalInterval,True
 
     except ValueError:
         import traceback
@@ -319,9 +324,10 @@ def adjustWithDTW(read,intarvals,leng,fmerDict,traceintervals):
         indexes = indexes + (signal_ivstart)
         #
         size = (end-start)
-        signalInterval = replaceList(signalInterval,indexes,size)
+        signalInterval,success = replaceList(signalInterval,indexes,size)
 
-        addindex = addindex + diffidx
+        if success:
+            addindex = addindex + diffidx
 
     read.signalboundary =  signalInterval
     return read

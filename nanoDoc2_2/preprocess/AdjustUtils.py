@@ -120,7 +120,7 @@ def interval_extract(list):
     range_start = previous_number = list[0]
 
     for number in list[1:]:
-        if number == previous_number + 1:
+        if number-previous_number < 4:
             previous_number = number
         else:
             yield [range_start+1, previous_number+4]
