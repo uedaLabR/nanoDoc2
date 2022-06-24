@@ -38,7 +38,8 @@ class nanoDocRead():
 
         self.refgenome = ""
         self.traceboundary = None
-
+        self.signalboundary = None
+        self.cigar_org = None
 
     def setrefgenome(self,seq):
         self.refgenome = seq

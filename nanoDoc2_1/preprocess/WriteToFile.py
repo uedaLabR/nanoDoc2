@@ -27,6 +27,17 @@ def _writeToFile(item,pathout,filename):
     #pd.to_pickle(df, file_out)
     FileIO.writeToPq(df, file_out)
 
+def _writeToFile2(item,pathout,filename):
+
+    binkey,datalist = item
+    os.makedirs(pathout + "/" + binkey, exist_ok=True)
+    file_out = pathout + "/" + binkey + "/" + filename +"_pre.pq"
+    df = pd.DataFrame(datalist,
+                      columns=['read_id', 'chr', 'strand', 'start', 'end','cigar','genome','fastq','offset','traceintervals','trace','signal','signalboundary'])
+
+    #pd.to_pickle(df, file_out)
+    FileIO.writeToPq(df, file_out)
+
 from numba import jit
 
 import numpy as np
@@ -129,4 +140,36 @@ def writeToFile(pathout,ncore,reads,filename):
         p.map(filewriteF, datadict.items())
 
 
+def toTuple2(read):
+
+    #
+    offset = read.traceboundary[0]
+    if offset < 0:
+        offset = 0
+
+    traceintervals = boundaryToIntervals(read.traceboundary)
+    strand = read.strand
+    if strand == -1:
+        strand=0
+    #print(read.trace.shape)
+    trace = convertTo16bit(read.trace)
+    #print(trace.shape)
+    return read.read_id, read.chrom, strand, read.r_st, read.r_en, read.cigar_str, read.refgenome, read.fastq, offset, traceintervals, trace, read.normSignal, read.signalboundary
+
+
+def writeToFile2(pathout,ncore,reads,filename):
+
+    datadict = {}
+    for read in reads:
+
+        # if read.normSignal is None:
+        #     continue
+        binkey = getBinkey(read)
+        if binkey not in datadict:
+            datadict[binkey] = []
+        datadict[binkey].append(toTuple2(read))
+
+    filewriteF = partial(_writeToFile2,pathout=pathout,filename=filename)
+    with Pool(ncore) as p:
+        p.map(filewriteF, datadict.items())
 
