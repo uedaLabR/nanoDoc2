@@ -36,7 +36,7 @@ def _writeToFile2(item,pathout,filename):
                       columns=['read_id', 'chr', 'strand', 'start', 'end','cigar','genome','fastq','offset','traceintervals','trace','signal','signalboundary'])
 
     #pd.to_pickle(df, file_out)
-    FileIO.writeToPq(df, file_out)
+    FileIO.writeToPq2(df, file_out)
 
 from numba import jit
 
@@ -148,13 +148,14 @@ def toTuple2(read):
         offset = 0
 
     traceintervals = boundaryToIntervals(read.traceboundary)
+    signalboundary = boundaryToIntervals(read.signalboundary)
     strand = read.strand
     if strand == -1:
         strand=0
     #print(read.trace.shape)
     trace = convertTo16bit(read.trace)
     #print(trace.shape)
-    return read.read_id, read.chrom, strand, read.r_st, read.r_en, read.cigar_str, read.refgenome, read.fastq, offset, traceintervals, trace, read.normSignal, read.signalboundary
+    return read.read_id, read.chrom, strand, read.r_st, read.r_en, read.cigar_str, read.refgenome, read.fastq, offset, traceintervals, trace, read.normSignal, signalboundary
 
 
 def writeToFile2(pathout,ncore,reads,filename):

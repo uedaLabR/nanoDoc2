@@ -28,16 +28,19 @@ def preprocess(read,fmerDict):
                                                                                                   trace,
                                                                                                   move)
 
-    # print(traceboundary)
+
     # print(len(read.trace))
 
     read.cigar_str = cigar
     read.cigar_org = cigar
     read.settraceboundary(traceboundary)
-    #print("normalize")
+    print("normalize")
     read.normSignal = ss.normalizeSignal(read, traceboundary, fmerDict)
     #print("adjust start")
+    print("adjust start")
     read.signalboundary = sn.adjustMismatchindel(read,fmerDict)
+    # print(read.signalboundary)
+    # print(type(read.signalboundary))
     print("adjust end")
     return read
 

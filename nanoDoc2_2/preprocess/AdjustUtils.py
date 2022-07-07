@@ -102,7 +102,8 @@ def findMismatchInterval(gseq,readseq):
 
     ml = []
     l = min(len(gseq),len(readseq))
-    for n in range(l-5):
+    margin = 10
+    for n in range(margin,l-5-margin):
         m = countmatch(gseq[n:n+5],readseq[n:n+5])
         if m <= 2:
             ml.append(n)
@@ -119,13 +120,15 @@ def interval_extract(list):
     list = sorted(set(list))
     range_start = previous_number = list[0]
 
+    rlist = []
     for number in list[1:]:
         if number-previous_number < 4:
             previous_number = number
         else:
-            yield [range_start+1, previous_number+4]
+            rlist.append([range_start+1, previous_number+4])
             range_start = previous_number = number
-    yield [range_start+1, previous_number+4]
+    rlist.append([range_start+1, previous_number+4])
+    return rlist
 
 # gseq =     "CAAGAAGAAGAAGGACGCTGGAAAGTCGGCCAAGAAAGACAAAGACCCAGTGAACAAATCCGGGGGCAAGGCCAAAAAGAAGAAGTGGTCCAAAGGCAAAGTTCGGGACAAGCTCAATAACTTAGTCTTGTTTGACAAAGCTACCTATGATAAACTCTGTAAGGAAGTTCCCAACTATAAACTTATAACCCCAGCTGTGGTCTCTGAGAGACTGAAGATTCGAGGCTCCCTGGCCAGGGCAGCCCTTCAGGAGCTCCTTAGTAAAGGACTTATCAAACTGGTTTCAAAGCACAGAGCTCAAGTAATTTACACCAGAAATACCAAGGGTGGAGATGCTCCAGCTGCTGGTGAAGATGCATGAATAGGTCCAACCAGCTGTACATTTGGAAAAATAAAACT"
 # traceseq = "TAAGAAGAAGAAGGACGCTGGAAAGTCGGCCAAGAAAGACAAAGACCCAGTGAACAAATCCGGGGGCAAGGCCAAAAAGAAGAAGTGGTCCAAAGGCAAAGTTCGGGACAAGCTCAATAACTTAGTTTCGTTTGACAAAGCTACCTATGATAAACTCTGTTGGGAAGTTCCCAACTATAAACTTATAACCCCAGCTGTGGTCTTTGAGAGACTGAAGATTCGAA---CCCTGGCCAGGGCAGCCCTTCAGGAGCTCCTTAGTAAAGGACCTCCCAAACTGGTTTCAAAGCACAGAGCTCAAGTAATTCATACCAGAAATTCTAAGGGTGGAGATGCTCCAGCTGCTGGTGAAGATGCATGA-TAGGTCCAACCAGCTGTACATTTGGAAAAATAAAAC"

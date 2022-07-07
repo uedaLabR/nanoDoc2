@@ -107,6 +107,17 @@ def viterbi(lgenome, compactTrace, trace, compactTracePositionMap, strand,orgcig
         m_range.append(m)
 
     tracebackPath, left = viterbiEach(compactTraceExon, lgenome, possiblemove_idx, frombasecaller_idx, ctstart, m_range)
+
+    tracebackPathL = []
+    nb4 = -1
+    for boundary in tracebackPath:
+        n = boundary[0]
+        m = boundary[1]
+        if n!=nb4:
+            tracebackPathL.append(m)
+        nb4 = n
+
+
     traceboundary = []
 
     b4 = 0
@@ -115,9 +126,8 @@ def viterbi(lgenome, compactTrace, trace, compactTracePositionMap, strand,orgcig
     traceseq = []
     didx = 0
     traceboundary.append(b4)
-    for boundary in tracebackPath:
+    for bb in tracebackPathL:
 
-        bb = boundary[1]
         # print(boundary)
         if bb != b4 and didx > 0:
             dl.append(didx)

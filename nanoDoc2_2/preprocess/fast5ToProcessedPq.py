@@ -88,7 +88,6 @@ def preprocess(f5file,pathout,ref,ncore,qvaluethres,fmercurrent,mappyoption):
     filename = os.path.basename(f5file)
     filename = os.path.splitext(filename)[0]
     wf.writeToFile2(pathout,ncore,ret,filename)
-    #
 
     print("finish segmentation and output file")
 
@@ -121,7 +120,7 @@ def _mergeParquet(dirinfo):
     df_s['read_no'] = df_s.index
 
     file_out = dir+".pq"
-    FileIO.writeToPqWithIdx(df_s, file_out)
+    FileIO.writeToPqWithIdx2(df_s, file_out)
     shutil.rmtree(dir)
 
 def mergeParquet(pathout,ncore):

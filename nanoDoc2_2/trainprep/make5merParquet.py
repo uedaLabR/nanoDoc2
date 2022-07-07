@@ -29,7 +29,7 @@ class Counter:
     def getList(self):
         return self.l
 
-from nanoDoc2_2.utils.PqFile5merReader import PqReader
+from nanoDoc2_2.utils.Pq5merReader import PqReader
 import sys
 import random
 import mappy as mp

@@ -28,7 +28,6 @@ class nanoDocRead():
         self.signal = self.signal[::-1]
 
 
-
         self.fastq = fastq
 
         fastq_list = self.fastq.split('\n')

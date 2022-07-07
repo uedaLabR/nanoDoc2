@@ -53,19 +53,17 @@ def reconst(traceintervals):
     r = np.array(r)
     return r
 
+
+
 @jit
 def getTraceSeq(traceintervals,trace):
 
-    # print(trace.shape)
-    # print(len(trace))
-    # print(traceintervals)
-    # print(len(traceintervals))
     seq = []
     tracelen = len(trace)
     idx = 0
     lastbaecallidx = 0
     a, c, g, u = 0, 0, 0, 0
-    for m in range(0, tracelen):
+    for m in range(1, tracelen):
 
        if m in traceintervals:
 
@@ -142,6 +140,21 @@ def toNum(move):
         cnt+=1
     return l
 
+def getNadd(cigar):
+
+    seq = []
+    a = pysam.AlignedSegment()
+    a.cigarstring = cigar
+    for cigaroprator, cigarlen in a.cigar:
+        break
+
+    if cigaroprator == 3:
+        for m in range(cigarlen):
+            seq.append("N")
+
+    return seq
+
+
 def adjustMismatchindel(read,fmerDict):
 
     gseq = read.refgenome
@@ -149,14 +162,32 @@ def adjustMismatchindel(read,fmerDict):
     traceintervals = np.array(read.traceboundary)
     # print(read.traceboundary)
     # print("pass2")
+    #readseq = getNadd(read.cigar_str).extend(getTraceSeq(traceintervals,read.trace))
+    ns = getNadd(read.cigar_str)
     readseq = getTraceSeq(traceintervals,read.trace)
+    ns.extend(readseq)
+
     # print("pass3")
-    readseqwithsla = addsla(readseq,read.cigar_org)
+    readseqwithsla = addsla(ns,read.cigar_str)
     # print("pass4")
+
+    # print(read.cigar_org)
+    # print(read.strand)
+    # r = read.fastq.split('\n')[1]
+    # print("traceboundary", len(traceintervals))
+    # print("gseq     ",len(gseq),gseq)
+    # print("read",len(r),r)
+    # print("readseq", len(readseq), readseq)
+    # print("readwiths",len(readseqwithsla),readseqwithsla)
     intarvals = au.findMismatchInterval(gseq,readseqwithsla)
+    #print("interval",intarvals)
     # print("pass5")
     signalInteral = adjustWithDTW(read,intarvals,len(gseq),fmerDict,traceintervals)
     # print("pass6")
+
+    # print(read.cigar_org)
+    # print("traceintervals", len(traceintervals))
+    # print("signalInteral",len(signalInteral))
 
     return signalInteral
 
@@ -217,9 +248,11 @@ def replaceList(signalInterval ,indexes,size):
             return signalInterval,False
 
         start = int(start[0])
-
         end = start + size
-        signalInterval[start:end] = indexes
+        # print("index",len(indexes),indexes)
+        #print("siginterval",len(signalInterval))
+        signalInterval[start:end+1] = indexes
+        #print("siginterval", len(signalInterval))
         return signalInterval,True
 
     except ValueError:
@@ -304,23 +337,13 @@ def adjustWithDTW(read,intarvals,leng,fmerDict,traceintervals):
         theorymean = au.theoryMean(fmerDict, lgenome, strand)
         subsignal = read.signal[signal_ivstart:signal_ivend]
 
-        # algo_c = rpt.KernelCPD(kernel="linear", min_size=1).fit(subsignal)
-        # result = algo_c.predict(pen=penalty_value)
         binnedSignal = binnedSignalAve(subsignal)
-        # print("tm",theorymean)
-        # print("bs", binnedSignal)
 
         distance, path = fastdtw.fastdtw(theorymean, binnedSignal, dist=euclidean)
         indexes = pathToIndex(path,len(subsignal))
-
-        # print(path)
         # print(indexes)
 
-
         diffidx = (gend-gstart) - (end-start)
-        # print((gend-gstart),diffidx)
-
-
         indexes = indexes + (signal_ivstart)
         #
         size = (end-start)
@@ -328,6 +351,6 @@ def adjustWithDTW(read,intarvals,leng,fmerDict,traceintervals):
 
         if success:
             addindex = addindex + diffidx
+            # print("diffidx",diffidx)
 
-    read.signalboundary =  signalInterval
-    return read
+    return signalInterval

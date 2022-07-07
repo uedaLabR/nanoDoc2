@@ -304,6 +304,7 @@ def _normalizeSignal(read,traceboundary,fmerDict):
     shift, signalmeans, theorymean = predictShift(signalmeans, theorymean)
     if signalmeans is None:
         return signal
+    print("shift",shift)
 
     window = 60
     step = 10

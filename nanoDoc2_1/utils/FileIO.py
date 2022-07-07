@@ -58,3 +58,63 @@ def writeToPq(df,output_file):
         compression='snappy',
         flavor=['spark'],
     )
+
+
+def writeToPqWithIdx2(df,output_file):
+
+    pschema = schema(
+        [
+            ('read_no', uint32()),
+            ('read_id', string()),
+            ('chr', string()),
+            ('strand', bool_()),
+            ('start', uint32()),
+            ('end', uint32()),
+            ('cigar', string()),
+            ('genome', string()),
+            ('fastq', string()),
+            ('offset', uint16()),
+            ('traceintervals', list_(uint16())),
+            ('trace', list_(uint16())),
+            ('signal', list_(uint8())),
+            ('signalboundary', list_(uint16()))
+        ]
+    )
+
+    pyarrow_table = Table.from_pandas(df, pschema)
+    pq.write_table(
+        pyarrow_table,
+        output_file,
+        row_group_size = 4000,
+        compression='snappy',
+        flavor=['spark'],
+    )
+
+def writeToPq2(df,output_file):
+
+    pschema = schema(
+        [
+            ('read_id', string()),
+            ('chr', string()),
+            ('strand', bool_()),
+            ('start', uint32()),
+            ('end', uint32()),
+            ('cigar', string()),
+            ('genome', string()),
+            ('fastq', string()),
+            ('offset', uint16()),
+            ('traceintervals', list_(uint16())),
+            ('trace', list_(uint16())),
+            ('signal', list_(uint8())),
+            ('signalboundary', list_(uint16()))
+        ]
+    )
+
+    pyarrow_table = Table.from_pandas(df, pschema)
+    pq.write_table(
+        pyarrow_table,
+        output_file,
+        row_group_size = 4000,
+        compression='snappy',
+        flavor=['spark'],
+    )
