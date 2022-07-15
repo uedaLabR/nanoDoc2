@@ -471,6 +471,7 @@ class PqReader:
             self.bufferData = None
             self.load(chr, pos, strand)
 
+        print(rseq)
         signals,traces,sampledlen,infos = self.getFormattedData(strand, pos,rseq,takecnt)
         if sampledlen > self.maxreads_org:
             sampledlen = self.maxreads_org
@@ -536,23 +537,36 @@ class PqReader:
 
         return 0
 
+    def nCount(self,cigar):
+        a = pysam.AlignedSegment()
+        a.cigarstring = cigar
+        refpos = 0
+        relpos = 0
+        for cigaroprator, cigarlen in a.cigar:
+
+            if cigaroprator == 3:  # N
+                return cigarlen
+            break
+        return 0
+
     def getRelativePos(self, strand, _start, end, cigar, pos):
 
+        ncnt = self.nCount(cigar)
         if strand:
-            return self.getRelativePosP(strand,_start,end,cigar,pos)
+            return self.getRelativePosP(strand,_start,end,ncnt,pos)
         else:
-            return self.getRelativePosN(strand, _start, end, cigar, pos)
+            return self.getRelativePosN(strand, _start, end, ncnt, pos)
 
 
-    def getRelativePosP(self,strand,_start,end,cigar,pos):
+    def getRelativePosP(self,strand,_start,end,ncnt,pos):
 
         margin = 1
-        start = pos - _start
-        end   = pos - _start + 5
+        start = pos - _start - ncnt
+        end   = pos - _start + 5  - ncnt
 
         return start,end
 
-    def getRelativePosN(self,strand,_start,end,cigar,pos):
+    def getRelativePosN(self,strand,_start,end,ncnt,pos):
 
         margin = 1
         start = pos - end - 5
@@ -597,6 +611,17 @@ class PqReader:
         return relativeStart, relativeEnd
 
 
+    def adjust(self,cigar):
+
+        a = pysam.AlignedSegment()
+        a.cigarstring = cigar
+        for cigaroprator, cigarlen in a.cigar:
+
+           if cigaroprator == 2 or cigaroprator == 4:  # Del OR SOFTCLIP
+               return cigarlen
+           else:
+               return 0
+        return 0
 
     def getOneRow(self,row,strand, pos,rseq):
 
@@ -610,8 +635,8 @@ class PqReader:
         trace = row['trace']
         signalboundary = row['signalboundary']
 
-        #
-        #print(traceintervals)
+        start = start + self.adjust(cigar)
+
         sted = self.calcStartEnd(strand,start,end,cigar,pos)
         if sted is None:
             return None
@@ -629,7 +654,6 @@ class PqReader:
         traceend = signalend // 10
 
         trace_t = trace[tracestart:traceend]
-
         #
         ret = binned(signal_t)
         bintrace = binTrace(trace_t, DATA_LENGTH_Trace)

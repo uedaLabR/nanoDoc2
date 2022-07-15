@@ -152,6 +152,7 @@ def h5tosegmantedPq(path,pathout,ref,MAX_CORE,qvaluethres,fmercurrent,mappyoptio
         preprocess(f5file,pathout,ref,ncore,qvaluethres,fmercurrent,mappyoption)
         cnt += 1
 
+
     #marge Parquet
     print("merge files")
     mergeParquet(pathout, ncore)

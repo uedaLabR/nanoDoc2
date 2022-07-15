@@ -12,7 +12,7 @@ if __name__ == "__main__":
     path = '/data/nanopore/IVT/koreaIVT/multifast5_2/workspace'
     pathout = '/data/nanoDoc2_2/varidate/SARSCOV2'
     ref = "/data/nanopore/reference/Cov2_Korea.fa"
-    # fmercurrent = "/data/nanopore/signalStatRNA180.txt"
+    # # fmercurrent = "/data/nanopore/signalStatRNA180.txt"
 
 
     fast5ToProcessedPq.h5tosegmantedPq(path, pathout, ref, MAX_CORE, qvaluethres, fmercurrent, (12, 10, 30, 20))

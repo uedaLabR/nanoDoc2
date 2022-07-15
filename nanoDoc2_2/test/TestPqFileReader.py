@@ -38,7 +38,7 @@ def decode(trace):
 base_corresponding_table = {0:'A',2:'G',1:'C',3:'T',4:'A-',6:'G-',5:'C-',7:'U-'}
 base_color = {'A':'#228b22','T':'#db7093','G':'#ff8c00','C':'#4169e1','A-':'#228b22','U-':'#db7093','G-':'#ff8c00','C-':'#4169e1'}
 from matplotlib import gridspec
-def plotGraph(signals,traces,path):
+def plotGraph(signals,traces,infos,path):
 
     gm = GraphManager(path)
 
@@ -53,7 +53,11 @@ def plotGraph(signals,traces,path):
         trace = traces[n]
         trace = decode(trace)
         trace = np.array(trace).T
-        print(trace)
+
+        info = infos[n]
+        fig.suptitle(info)
+
+        print(info)
 
         i = 0
         for atrace in trace:
@@ -74,13 +78,13 @@ if __name__ == "__main__":
 
     minreadlen = 200
     strand = True
-    start = 200
+    start = 50
     end = 500
     fr = PqReader(path, ref, minreadlen, strand, start, end, IndelStrict=True)
     chrom = "cc6m_2244_t7_ecorv"
-    pos = 310
+    pos = 356
     signals,traces,sampledlen,infos = fr.getRowData(chrom, True, pos, takecnt=50)
     # print(signals)
-    plotGraph(signals,traces,fp)
+    plotGraph(signals,traces,infos,fp)
 
 

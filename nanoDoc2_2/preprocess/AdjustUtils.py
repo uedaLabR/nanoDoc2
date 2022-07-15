@@ -52,12 +52,12 @@ def theoryMean(fmerDict,lgenome,strand):
     #         fmer = fmer.replace('N', 'A')
     #     cv = fmerDict[fmer]
     #     means.append(cv)
-
+    print(lgenome)
     if strand == "-":
 
         rg = lgenome
-        for n in range(0, len(rg) - 5):
-            fmer = rg[n:n + 5]
+        for n in range(1, len(rg) - 5):
+            fmer = rg[n:n+5]
             if "N" in fmer:
                 fmer = fmer.replace('N', 'A')
             cv = fmerDict[fmer]
@@ -67,7 +67,7 @@ def theoryMean(fmerDict,lgenome,strand):
 
         #plus strand
         rg = lgenome[::-1]
-        for n in range(0,len(rg)-5):
+        for n in range(1,len(rg)-5):
 
            fmer = rg[n:n+5]
            if "N" in fmer:
@@ -89,6 +89,7 @@ def getCurrentDict(fmercurrent):
                 a[data[0]] = float(data[1])
             cnt = cnt + 1
     return a
+
 def countmatch(g,r):
 
     cnt = 0
@@ -109,9 +110,14 @@ def findMismatchInterval(gseq,readseq):
             ml.append(n)
         elif readseq[n+2] =='-':
             ml.append(n)
+    ivl = []
+    maxinterval = 30
+    for iv in interval_extract(ml):
+        if iv[1]-iv[0] > maxinterval:
+            continue
+        ivl.append(iv)
 
-    return interval_extract(ml)
-
+    return ivl
 
 def interval_extract(list):
     if len(list) ==0:
