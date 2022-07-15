@@ -223,7 +223,7 @@ def adjustMismatchindel(read,fmerDict):
     # print("interval",intarvals)
     # print("pass5")
 
-    n = -3
+    n = -2
     signalInterval = adjustWithDTW(read,intarvals,len(gseq),fmerDict,traceintervals,n)
     traceb = np.array(signalInterval) // 10
     #readseq2 = getTraceSeq(traceb, read.trace)
