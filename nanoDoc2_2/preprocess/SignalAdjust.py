@@ -204,6 +204,8 @@ def adjustMismatchindel(read,fmerDict):
     # print("pass2")
     #readseq = getNadd(read.cigar_str).extend(getTraceSeq(traceintervals,read.trace))
     ns = getNadd(read.cigar_str)
+    numberofFisrstN = len(ns)
+    print(ns)
     readseq = getTraceSeq(traceintervals,read.trace)
     ns.extend(readseq)
 
@@ -217,8 +219,9 @@ def adjustMismatchindel(read,fmerDict):
     # print("traceboundary", len(traceintervals))
     # print("gseq     ",len(gseq),gseq)
     # print("read",len(r),"".join(r))
-    print("readseq", len(readseq), "".join(readseq))
-    print("readwiths",len(readseqwithsla),readseqwithsla)
+    # print(read.cigar_str,ns)
+    # print("readseq", len(readseq), "".join(readseq))
+    # print("readwiths",len(readseqwithsla),readseqwithsla)
     intarvals = au.findMismatchInterval(gseq,readseqwithsla)
     # print("interval",intarvals)
     # print("pass5")
@@ -243,10 +246,13 @@ def relPos(pos,cgl):
 
     lpos = pos
     cpos = 0
+    isFirst = True
     for cigaroprator, cigarlen in cgl:
 
         if cigaroprator == 3:  # N
 
+            if isFirst:
+                cpos = cpos - cigarlen
             # refpos = refpos + cigarlen
             pass
 
@@ -262,6 +268,7 @@ def relPos(pos,cgl):
 
             lpos = lpos - cigarlen
 
+        isFirst = False
     #should not come here
     return cpos + lpos
 
