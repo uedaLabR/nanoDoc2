@@ -5,30 +5,34 @@ if __name__ == "__main__":
     path = '/data/nanopore/IVT/m6aIVT/multifats5_2/workspace'
     pathout = '/data/nanoDoc2_2/varidate/CurlcakeIVT'
     ref = "/data/nanopore/reference/Curlcake.fa"
-    MAX_CORE = 24
+    MAX_CORE = 2
     qvaluethres = 5
     fmercurrent = "/data/nanopore/signalStatRNA180.txt"
 
     path = '/data/nanopore/IVT/koreaIVT/multifast5_2/workspace'
     pathout = '/data/nanoDoc2_2/varidate/SARSCOV2'
     ref = "/data/nanopore/reference/Cov2_Korea.fa"
-    # fmercurrent = "/data/nanopore/signalStatRNA180.txt"
+    fmercurrent = "/data/nanopore/signalStatRNA180.txt"
 
 
-    fast5ToProcessedPq.h5tosegmantedPq(path, pathout, ref, MAX_CORE, qvaluethres, fmercurrent, (12, 10, 30, 20))
+    # fast5ToProcessedPq.h5tosegmantedPq(path, pathout, ref, MAX_CORE, qvaluethres, fmercurrent, (12, 10, 30, 20))
 
 
     # path = '/data/nanopore/rRNA/1623_ivt-multi/multifast5_2/workspace'
-    # pathout = '/data/nanopore/nanoDoc2_1/varidate/1623_ivt'
+    # pathout = '/data/nanoDoc2_2/varidate/1623_ivt'
     # #ref = "/data/nanopore/reference/NC000913.fa"
     # ref = "/data/nanopore/nanoDoc2_1/testrun/ecolirRNA.fa"
     # fmercurrent = "/data/nanopore/signalStatRNA180.txt"
 
-    # path = '/data/nanopore/rRNA/1825_ivt-multi/multifast5_2/workspace'
-    # pathout = '/data/nanopore/nanoDoc2_1/varidate/1825_ivt'
-    # #ref = "/data/nanopore/reference/Yeast_sk1.fa"
-    # ref = "/data/nanopore/nanoDoc2_1/testrun/yeastrRNA.fa"
-    # fmercurrent = "/data/nanopore/signalStatRNA180.txt"
+    fast5ToProcessedPq.h5tosegmantedPq(path, pathout, ref, MAX_CORE, qvaluethres, fmercurrent, (12, 10, 30, 20))
+
+    path = '/data/nanopore/rRNA/1825_ivt-multi/multifast5_2/workspace'
+    pathout = '/data/nanoDoc2_2/varidate/1825_ivt'
+    #ref = "/data/nanopore/reference/Yeast_sk1.fa"
+    ref = "/data/nanopore/nanoDoc2_1/testrun/yeastrRNA.fa"
+    fmercurrent = "/data/nanopore/signalStatRNA180.txt"
+
+    fast5ToProcessedPq.h5tosegmantedPq(path, pathout, ref, MAX_CORE, qvaluethres, fmercurrent, (12, 10, 30, 20))
 
     # path = '/data/project/dataFromNanoCompare/basecalled/ncRNAMETTL3KD/workspace'
     # pathout = '/data/nanopore/nanoDoc2_1/varidate/pq/ncRNAMETTL3KD'

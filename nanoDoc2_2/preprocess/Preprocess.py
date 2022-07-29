@@ -41,7 +41,6 @@ def preprocess(read,fmerDict):
     read.signalboundary = sn.adjustMismatchindel(read,fmerDict)
     # print(len(read.traceboundary))
     # print(len(read.signalboundary))
-
     print("adjust end")
     return read
 

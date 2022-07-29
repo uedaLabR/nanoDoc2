@@ -2,7 +2,7 @@ import pyarrow.parquet as pq
 import pandas as pd
 from Bio import SeqIO
 from operator import itemgetter, attrgetter
-from pyarrow import list_, bool_ ,int8,uint8, uint16, uint32, int64, float64, float32, bool_, date32, decimal128, timestamp, string, Table, schema, parquet as pq
+from pyarrow import list_, bool_ ,int8,uint8, uint16, uint32,int16, int32,int64, float64, float32, bool_, date32, decimal128, timestamp, string, Table, schema, parquet as pq
 import numpy as np
 
 class Counter:
@@ -112,7 +112,7 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
             fr = PqReader(path, ref, 400, strand, maxreads=2000, IndelStrict=True)
 
 
-        traces,signals,sampledlen,infos = fr.getRowData(chr, True, pos,takecnt=takecnt)
+        signals, traces, sampledlen, infos = fr.getRowData(chr, True, pos,takecnt=takecnt)
         print(p,len(signals),takecnt)
         pfidx = fileidx
         if len(signals) > 0:
@@ -143,7 +143,7 @@ def makeSamplePlan(refs,pqs,output_file,takeCnt):
         [
             ('flg', uint32()),
             ('fmer', string()),
-            ('trace', list_(uint16())),
+            ('trace', list_(int32())),
             ('signal', list_(float32()))
         ]
     )

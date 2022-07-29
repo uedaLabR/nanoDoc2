@@ -11,7 +11,7 @@ import itertools
 import keras
 
 from nanoDoc2.network import cnnwavenettrace_keras
-DATA_LENGTH = 40
+DATA_LENGTH = 768
 
 
 def getNearExculudeSelf(nuc):
@@ -41,7 +41,7 @@ def prepDataNear(s_data,samplesize, nuc):
     totalcnt = 0
 
     nucs = getNearExculudeSelf(nuc)
-    s_data ="/data/nanopore/nanoDoc2/100traceeach"
+    s_data ="/data/nanoDoc2_2/100traceeach"
     paths = list(map(lambda x: s_data + "/" + x + ".pq", nucs))
 
     samplecnt = 0
@@ -57,16 +57,16 @@ def prepDataNear(s_data,samplesize, nuc):
         cnt = 0
         for idx, row in df.iterrows():
 
-            flg = row[1]
-            trace = np.array(row[2])
+            flg = row[0]
+            signal = np.array(row[3])
 
 
             testidx = (idx % 5 == 0)
             if testidx:
-                test_x.append(trace)
+                test_x.append(signal)
                 test_y.append(samplecnt)
             else:
-                train_x.append(trace)
+                train_x.append(signal)
                 train_y.append(samplecnt)
 
             cnt = cnt + 1
@@ -88,9 +88,9 @@ def prepDataNear(s_data,samplesize, nuc):
 
     train_x = train_x /255
     test_x = test_x /255
-    DATA_LENGTH = 40
-    train_x = np.reshape(train_x, (-1, DATA_LENGTH, 4))
-    test_x = np.reshape(test_x, (-1, DATA_LENGTH, 4))
+
+    train_x = np.reshape(train_x, (-1, DATA_LENGTH, 1))
+    test_x = np.reshape(test_x, (-1, DATA_LENGTH, 1))
     train_y = np.reshape(train_y, (-1, 1,))
     test_y = np.reshape(test_y, (-1, 1,))
 
@@ -116,13 +116,13 @@ def prepData(s_data,samplesize, nuc):
     totalcnt = 0
     for idx, row in df.iterrows():
 
-        trace = np.array(row[2])
-        flg = row[1]
+        signal = np.array(row[3])
+        flg = row[0]
         if totalcnt%5 == 0:
-            test_x.extend(trace)
+            test_x.extend(signal)
             test_y.append(flg)
         else:
-            train_x.extend(trace)
+            train_x.extend(signal)
             train_y.append(flg)
 
         # if cnt == 30000:
@@ -148,8 +148,8 @@ def prepData(s_data,samplesize, nuc):
     test_x = test_x /255
 
     DATA_LENGTH_UNIT = 8*5
-    train_x = np.reshape(train_x, (-1, DATA_LENGTH_UNIT, 4))
-    test_x = np.reshape(test_x, (-1, DATA_LENGTH_UNIT, 4))
+    train_x = np.reshape(train_x, (-1, DATA_LENGTH, 1))
+    test_x = np.reshape(test_x, (-1, DATA_LENGTH, 1))
     train_y = np.reshape(train_y, (-1, 1,))
     test_y = np.reshape(test_y, (-1, 1,))
 
@@ -182,7 +182,7 @@ def train(s_data, s_out, nuc,bestwight ,samplesize , epoch_num):
         _train(s_data, s_out, nuc,bestwight ,samplesize , epoch_num)
 
 
-import nanoDoc2.network.cnnwavenet_decfilter as cnnwavenet_decfilter
+import nanoDoc2_2.network.CnnWavenetDecDimention as CnnWavenetDecDimention
 def _train(s_data, s_out, nuc,bestwight ,samplesize , epoch_num):
 
     if not os.path.exists(s_out + '/' + nuc):
@@ -196,15 +196,16 @@ def _train(s_data, s_out, nuc,bestwight ,samplesize , epoch_num):
 
     num_classes_org = 1024
     num_classes = 63
-    shape1 = (None, DATA_LENGTH, 4)
+    shape1 = (None, DATA_LENGTH, 1)
     optimizer = SGD(lr=5e-5, decay=0.00005)
-
-    model = cnnwavenet_decfilter.build_network(shape=shape1, num_classes=num_classes_org)
+    inweight = None
+    model = CnnWavenetDecDimention.build_network(shape=shape1, num_classes=num_classes_org,inweight=inweight)
     model.load_weights(bestwight)
     #model.layers.pop()  # remove last layer
     #model.layers.pop()  # remove last layer
     #model.layers.pop()  # remove last layer
 
+    model.summary()
 
     for layer in model.layers:
         if layer.name == "conv1d_68":
@@ -212,7 +213,8 @@ def _train(s_data, s_out, nuc,bestwight ,samplesize , epoch_num):
         else:
             layer.trainable = False
 
-    flat = GlobalAveragePooling1D()(model.layers[-4].output)
+    # flat = GlobalAveragePooling1D()(model.layers[-4].output)
+    flat = model.layers[-11].output
     model_t = Model(inputs=model.input, outputs=flat)
     model_r = Network(inputs=model_t.input,
                       outputs=flat,
@@ -299,11 +301,11 @@ if __name__ == '__main__':
     cnt = 0
     for n1, n2, n3, n4, n5 in itertools.product(nucs, nucs, nucs, nucs, nucs):
 
-        s_data = "/data/nanopore/nanoDoc2/5000traceeach"
-        s_out = "/data/nanopore/IVT_Trace/weight/docweight"
+        s_data = "/data/nanoDoc2_2/5000traceeach"
+        s_out = "/data/nanoDoc2_2/docweight"
         nuc = n1+n2+n3+n4+n5
-        bestwight = "/data/nanopore/IVT_Trace/weight_dec/weightwn_keras_dec.hdf"
-        epoch_num = 10
+        bestwight = "/data/nanoDoc2_2/varidate/weight/weight_dec/weightwn_dec.hdf"
+        epoch_num = 5
         samplesize = 5000
         print(nuc,cnt)
         train(s_data, s_out, nuc, bestwight, samplesize, epoch_num)

@@ -272,7 +272,7 @@ class PqReader:
         fileidx = 0
         sortedfile = self.getFilePathList(path)
 
-        print("sortedfile",sortedfile)
+        # print("sortedfile",sortedfile)
         for file in sortedfile:
 
             parquet_file = pq.ParquetFile(file)
@@ -284,6 +284,7 @@ class PqReader:
             indexlist.append((fileidx,chrInfo,strandInfo,startInfo,endInfo))
             fileidx +=1
 
+        # print("indexlist",indexlist)
         self.indexdf = pd.DataFrame(indexlist,
                           columns=['fileidx','chr','strand','start','end'])
         #print(self.indexdf)
@@ -310,9 +311,9 @@ class PqReader:
             else:
                 dataadd = pq.read_table(filepath, columns=['start', 'end']).to_pandas()
                 indexdata = pd.concat([indexdata, dataadd])
-                #print(filepath)
-
-        #print(indexdata)
+        #         print(filepath)
+        #
+        # print(indexdata)
         depth = indexdata.query('start <=' + str(pos - 10) + ' & end >=' + str(pos + 10))['start'].count()
         #depth = indexdata.query('start <=' + str(pos-10) + ' & end >=' + str(pos+10))['start'].count()
         return depth
@@ -642,6 +643,9 @@ class PqReader:
             return None
         print(sted)
         signalbstart, signalbend = sted
+        if signalbend >= len(signalboundary):
+            return None
+
         signalstart = signalboundary[signalbstart]
         signalend = signalboundary[signalbend]
 

@@ -104,6 +104,7 @@ def _mergeParquet(dirinfo):
     files = glob.glob(dir+"/*_pre.pq")
     data = []
     for file in files:
+        print(file)
         asfile = os.path.abspath(file)
         #df = pd.read_pickle(asfile)
         df = pd.read_parquet(asfile)
@@ -127,11 +128,12 @@ def mergeParquet(pathout,ncore):
 
     dirlist = os.listdir(pathout)
     dirlistTohandle = []
-
+    print(pathout)
     pqidx = 0
     for dir in dirlist:
 
         p = pathout+"/"+dir
+        print(p)
         pqidx = pqidx+1
         dirlistTohandle.append((pqidx,p))
 
@@ -151,7 +153,6 @@ def h5tosegmantedPq(path,pathout,ref,MAX_CORE,qvaluethres,fmercurrent,mappyoptio
         print(cnt,f5file)
         preprocess(f5file,pathout,ref,ncore,qvaluethres,fmercurrent,mappyoption)
         cnt += 1
-
 
     #marge Parquet
     print("merge files")
