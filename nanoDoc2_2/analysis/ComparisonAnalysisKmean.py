@@ -12,7 +12,8 @@ from nanoDoc2.network import cnnwavenet_decfilter
 DATA_LENGTH_UNIT = 60
 DATA_LENGTH = 768
 from numba import jit,u1,i8,f8
-from nanoDoc2_2.utils.PqFile5merReader import PqReader
+#from nanoDoc2_2.utils.PqFile5merReader import PqReader
+from nanoDoc2_2.utils.PqReader2 import PqReader
 from nanoDoc2_2.network import CnnWavenetDecDimention
 
 def getModel():

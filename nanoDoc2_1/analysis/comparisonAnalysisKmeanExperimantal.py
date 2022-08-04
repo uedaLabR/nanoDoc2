@@ -22,6 +22,9 @@ def getModel():
     model = CnnWavenetDecDimention.build_network(shape=shape1, num_classes=num_classes_org)
     flat = model.layers[-11].output
     model_t = Model(inputs=model.input, outputs=flat)
+    outdir = "/data/nanopore/nanoDoc2_1/varidate/weight_dec/"
+    weight = outdir + "/weightwn_dec.hdf"
+    model_t.load_weights(weight)
     model_t.summary()
     return model_t
 
@@ -229,15 +232,15 @@ def eachProcess(wfile, n, start,subs, strand, uplimit, refpr, targetpr,
                               model_t, fw, chrom,
                               chromtgt):
     posadjust = 4
-    weight_path = wfile + "/" +str(subs.replace("U","T")) + "/model_t_ep_2.h5"
-    if not os.path.isfile(weight_path):
-        #     no 6mer found
-        print(weight_path)
-        infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n+posadjust, str(subs), 0, 0, 0, 0)
-        print(infos)
-        fw.writelines(infos + "\n")
-        fw.flush()
-        return (0, 0)
+    # weight_path = wfile + "/" +str(subs.replace("U","T")) + "/model_t_ep_2.h5"
+    # if not os.path.isfile(weight_path):
+    #     #     no 6mer found
+    #     print(weight_path)
+    #     infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n+posadjust, str(subs), 0, 0, 0, 0)
+    #     print(infos)
+    #     fw.writelines(infos + "\n")
+    #     fw.flush()
+    #     return (0, 0)
 
     try:
         # target signal
@@ -258,7 +261,7 @@ def eachProcess(wfile, n, start,subs, strand, uplimit, refpr, targetpr,
     #     fw.writelines(infos + "\n")
     #     fw.flush()
     #     return (cnt, cntref)
-    model_t.load_weights(weight_path)
+    # model_t.load_weights(weight_path)
     if cntref < cnt and cntref > 0:
         rawdatas, cnt = nanoDocUtils.reducesize(rawdatas, cntref)  # raw data have the same size as reference data
 
@@ -319,8 +322,8 @@ def modCall(wfile, ref, refpq, targetpq, out, chrom, chromtgt, start, end, minre
     if end < 0:
         end = len(seq)
 
-    refpr = PqReader(refpq, ref,minreadlen,strand, start, end, maxreads = uplimit,IndelStrict=True) # Assume
-    targetpr = PqReader(targetpq,ref,minreadlen,strand, start, end ,maxreads = uplimit,IndelStrict=True)
+    refpr = PqReader(refpq, ref,minreadlen,chrom,strand, start, end, maxreads = uplimit,IndelStrict=True) # Assume
+    targetpr = PqReader(targetpq,ref,minreadlen,chrom,strand, start, end ,maxreads = uplimit,IndelStrict=True)
     model_t = getModel()
 
     fw = open(out, mode='w')

@@ -7,7 +7,7 @@ from tensorflow.keras.layers import GlobalAveragePooling1D
 import numpy as np
 from tensorflow.keras import Model
 from nanoDoc2.network import cnnwavenet_decfilter
-import nanoDoc2_2.analysis.ComparisonAnalysisKmean as  comparisonAnalysisKmean
+import nanoDoc2_2.analysis.ComparisonAnalysisKmean2 as  comparisonAnalysisKmean
 DATA_LENGTH_UNIT = 60
 DATA_LENGTH = 1024
 from numba import jit,u1,i8,f8
@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
     chrom = "ecoli16S"
     chromtgt = "ecoli16S"
-    start = 1
+    start = 1200
     end = 1541
 
     # start = 4035570

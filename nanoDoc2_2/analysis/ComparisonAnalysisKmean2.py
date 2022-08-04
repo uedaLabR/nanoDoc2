@@ -10,16 +10,18 @@ from tensorflow.keras import Model
 from nanoDoc2.network import cnnwavenet_decfilter
 
 DATA_LENGTH_UNIT = 60
-DATA_LENGTH = 1024
+DATA_LENGTH = 768
 from numba import jit,u1,i8,f8
-from nanoDoc2_1.utils.PqFile6merReader2 import PqReader
-from nanoDoc2_1.network import CnnWavenetDecDimention
+#from nanoDoc2_2.utils.PqFile5merReader import PqReader
+from nanoDoc2_2.utils.PqReader2 import PqReader
+from nanoDoc2_2.network import CnnWavenetDecDimention
 
 def getModel():
 
-    num_classes_org = 4078
+    num_classes_org = 1024
     shape1 = (None, DATA_LENGTH, 1)
-    model = CnnWavenetDecDimention.build_network(shape=shape1, num_classes=num_classes_org)
+    inweight = None
+    model = CnnWavenetDecDimention.build_network(shape=shape1, num_classes=num_classes_org,inweight=inweight)
     flat = model.layers[-11].output
     model_t = Model(inputs=model.input, outputs=flat)
     model_t.summary()
@@ -35,33 +37,53 @@ def getSD(cnt, coeffA, coeffB):
     return sd
 
 
-# def callMinusStrand(wfile, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr, model_t, fw, chrom, chromtgt,
-#                     start,
-#                     end):
-#     n = end
-#     idx = 0
-#     res = None #faiss.StandardGpuResources()
-#     strand = "-"
-#     while n > start+5:
-#         subs = seq[idx:idx + 6]
-#         cnt, cntref = eachProcess(wfile, n, subs, strand, coeffA, coeffB, uplimit, takeparcentile, seq, refpr, targetpr,
-#                                   model_t, fw, chrom,
-#                                   chromtgt,res)
-#
-#         n = n - 1
-#         idx = idx + 1
-
 
 def callPlusStrand(wfile, uplimit, seq, refpr, targetpr, model_t, fw, chrom,chromtgt,start, end):
 
     strand = "+"
     res = None #faiss.StandardGpuResources()
+    xrefb4 = None
+    xrowb4 = None
+    posadjust = 4
+    niter = 20
+
     for n in range(start, end-10):
-        subs = seq[(n - start):(n - start) + 6]
-        cnt, cntref = eachProcess(wfile, n, start,subs, strand, uplimit, refpr, targetpr,
+        subs = seq[(n - start):(n - start) + 5]
+        ret = eachProcess(wfile, n, start,subs, strand, uplimit, refpr, targetpr,
                                   model_t, fw, chrom, chromtgt)
+        if ret is not None:
+            xref, xrow, cntref, cnt = ret
+
+        else:
+            xref, xrow, cntref, cnt = None,None,0,0
+            infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n + posadjust, str(subs), 0, 0, 0, 0)
+            print(infos)
+            fw.writelines(infos + "\n")
+            fw.flush()
+            continue
+
+        # if xrefb4 is None:
+        #
+        #     xrefb4 = xref
+        #     xrowb4 = xrow
+        #     continue
 
 
+
+        # xreftotal = np.concatenate([xref, xrefb4])
+        # xrowtotal = np.concatenate([xrow, xrowb4])
+
+        score = getScoreFromCluster(xref, xrow, niter)
+        scoreDisplay = '{:.7f}'.format(score)
+
+        infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n + posadjust, str(subs), cnt, cntref, scoreDisplay)
+        # print(n-4037519)
+        print(infos)
+        fw.writelines(infos + "\n")
+        fw.flush()
+        #
+        # xrefb4 = xref
+        # xrowb4 = xrow
 
 
 
@@ -169,14 +191,13 @@ def getScoreFromDistanceComparison(xref, xrow, res):
 
     return score
 
-
 def getScoreFromCluster(xref, xrow, niter):
 
     x = np.concatenate([xref, xrow])
     print(x.shape)
     nn, d = x.shape
     mindatasizeFor3centroid = 120
-    scorenormalizefactor = 75
+    scorenormalizefactor = 100
 
     k = 3 # k=3 for clustering one for unmod, one for mod, other
     if nn < mindatasizeFor3centroid: #if data size < 120 to small to 3 centroids
@@ -216,6 +237,53 @@ def getScoreFromCluster(xref, xrow, niter):
     maxscore = maxscore
     return maxscore
 
+# def getScoreFromCluster(xref, xrow, niter):
+#
+#     x = np.concatenate([xref, xrow])
+#     print(x.shape)
+#     nn, d = x.shape
+#     mindatasizeFor3centroid = 120
+#     scorenormalizefactor = 75
+#
+#     #k = 4 # k=3 for clustering one for unmod, one for mod, other
+#
+#     kmeans = faiss.Kmeans(d=d, k=k, niter=niter)
+#     kmeans.train(x)
+#     # index = faiss.IndexFlatL2(16)
+#     D, I = kmeans.index.search(x, 1)
+#     Iref, Irow = np.split(I, 2)
+#
+#
+#     maxscore = 0
+#     scores = []
+#     for m in range(k):
+#         countref = np.count_nonzero(Iref == m)
+#         countrow = np.count_nonzero(Irow == m)
+#
+#         if countref > 0 and countrow > 0:
+#
+#             tc = (countref + countrow) // 2
+#             df = pd.DataFrame([[tc, tc], [countref, countrow]])
+#             chi2, p, dof, expected = chi2_contingency(df, correction=False)
+#
+#             score = 0
+#             if abs(1-p) < 0.00001:
+#                 score = 0
+#             elif p > 0:
+#                 score = -1 * math.log10(p) / scorenormalizefactor
+#             print("ountref,countrow", countref, countrow,score)
+#             scores.append(score)
+#
+#     scores = sorted(scores, reverse=True)
+#     if len(scores) > 1:
+#
+#         score = np.mean(scores[0:2]) # top 2 score
+#         if score > 1:
+#             score = 1
+#
+#         return score
+#     return 0.0
+
 def getFormat(dlist):
 
     signal = np.array(dlist)
@@ -230,75 +298,35 @@ def eachProcess(wfile, n, start,subs, strand, uplimit, refpr, targetpr,
                               chromtgt):
     posadjust = 4
     weight_path = wfile + "/" +str(subs.replace("U","T")) + "/model_t_ep_2.h5"
-    if not os.path.isfile(weight_path):
-        #     no 6mer found
-        print(weight_path)
-        infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n+posadjust, str(subs), 0, 0, 0, 0)
-        print(infos)
-        fw.writelines(infos + "\n")
-        fw.flush()
-        return (0, 0)
-
     try:
         # target signal
         rtraces, rawdatas, cnt, rinfos = targetpr.getRowData(chromtgt, strand, n, uplimit)
         # reference signal
         retraces,refdatas, cntref, reinfos = refpr.getRowData(chrom, strand, n, cnt)
-    except:
-        infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n+posadjust, str(subs), 0, 0,  0)
-        print(infos)
-        fw.writelines(infos + "\n")
-        fw.flush()
-        return (0,0)
 
-    #    reference start or end, or nodepth
-    # if  ((((n-start) < 25 ) and (cnt < 500 or cntref < 500 )) or (cnt < 5 or cntref < 5 or (rawdatas is None) or (refdatas is None))) :
-    #     infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n+posadjust, str(subs), cnt, cnt,  0)
-    #     print(infos)
-    #     fw.writelines(infos + "\n")
-    #     fw.flush()
-    #     return (cnt, cntref)
+        # dref = targetpr.getDepth(chromtgt, n,strand)
+        # drow = refpr.getDepth(chromtgt, n,strand)
+
+    except:
+        return None
+
     model_t.load_weights(weight_path)
     if cntref < cnt and cntref > 0:
         rawdatas, cnt = nanoDocUtils.reducesize(rawdatas, cntref)  # raw data have the same size as reference data
 
     if cntref == 0:
-        infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n+posadjust, str(subs), 0, 0,  0)
-        print(infos)
-        fw.writelines(infos + "\n")
-        fw.flush()
-        return (0,0)
+        return None
 
     refdata = getFormat(refdatas)
     rowdata = getFormat(rawdatas)
     #
-    #
-    #k = 3
-    niter = 20
-
-
     try:
         xref = model_t.predict(refdata)
         xrow = model_t.predict(rowdata)
     except:
-        infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n+posadjust, str(subs), 0, 0,  0)
-        print(infos)
-        fw.writelines(infos + "\n")
-        fw.flush()
-        return (0,0)
+        return None
 
-    score = getScoreFromCluster(xref, xrow, niter)
-    scoreDisplay = '{:.7f}'.format(score)
-
-    # score2  = getScoreFromDistanceComparison(xref, xrow, res)
-    # scoreDisplay2 = '{:.7f}'.format(score2)
-
-    infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n+posadjust, str(subs), cnt, cntref,scoreDisplay)
-    # print(n-4037519)
-    print(infos)
-    fw.writelines(infos + "\n")
-    fw.flush()
-    return (cnt, cntref)
+    return xref,xrow,cntref,cnt#,dref,drow
 
 
 def modCall(wfile, ref, refpq, targetpq, out, chrom, chromtgt, start, end, minreadlen,uplimit = 500):
@@ -324,7 +352,7 @@ def modCall(wfile, ref, refpq, targetpq, out, chrom, chromtgt, start, end, minre
     model_t = getModel()
 
     fw = open(out, mode='w')
-    infos = "{0}\t{1}\t{2}\t{3}\t{4}".format("#pos","6mer","IVT","WT","score")
+    infos = "{0}\t{1}\t{2}\t{3}\t{4}".format("#pos","5mer","IVT","WT","score")
     print(infos)
     fw.writelines(infos + "\n")
     fw.flush()

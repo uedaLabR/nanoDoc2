@@ -231,9 +231,9 @@ def adjustMismatchindel(read,fmerDict):
     traceb = np.array(signalInterval) // 10
     #readseq2 = getTraceSeq(traceb, read.trace)
 
-    # print("traceinterval",len(traceintervals),traceintervals)
-    # print("signalinterval",len(traceb),traceb)
-    # print("interval", intarvals)
+    print("traceinterval",len(traceintervals),traceintervals)
+    print("signalinterval",len(traceb),traceb)
+    print("interval", intarvals)
 
     # print(read.cigar_org)
     # print("traceintervals", len(traceintervals))
@@ -396,13 +396,14 @@ def adjustWithDTW(read,intarvals,leng,fmerDict,traceintervals,n):
         strand = True
         lgenome = read.refgenome[gstart+n:gend+n+6]
 
-        # print(lgenome)
         theorymean = au.theoryMean(fmerDict, lgenome, strand)
         subsignal = read.signal[signal_ivstart:signal_ivend]
 
         binnedSignal = binnedSignalAve(subsignal)
 
         distance, path = fastdtw.fastdtw(theorymean, binnedSignal, dist=euclidean)
+        print("theorymean",theorymean)
+
         indexes = pathToIndex(path,len(subsignal))
         # print(indexes)
 

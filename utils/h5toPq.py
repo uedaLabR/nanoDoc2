@@ -94,8 +94,6 @@ def indexFiles(path):
 
 def makeParquet(indexf,ref, pathout,  thread):
 
-
-
     indexlist = indexFiles(indexf)
     blist = []
     idx = 1

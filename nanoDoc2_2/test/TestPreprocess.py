@@ -24,7 +24,7 @@ if __name__ == "__main__":
     # ref = "/data/nanopore/nanoDoc2_1/testrun/ecolirRNA.fa"
     # fmercurrent = "/data/nanopore/signalStatRNA180.txt"
 
-    fast5ToProcessedPq.h5tosegmantedPq(path, pathout, ref, MAX_CORE, qvaluethres, fmercurrent, (12, 10, 30, 20))
+    # fast5ToProcessedPq.h5tosegmantedPq(path, pathout, ref, MAX_CORE, qvaluethres, fmercurrent, (12, 10, 30, 20))
 
     path = '/data/nanopore/rRNA/1825_ivt-multi/multifast5_2/workspace'
     pathout = '/data/nanoDoc2_2/varidate/1825_ivt'
