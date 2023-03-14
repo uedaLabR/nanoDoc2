@@ -382,14 +382,17 @@ class PqReader:
         strand = True
         self.loadchr = chr
         margin = 200
-        query = 'start <= ' + str(start+margin) + ' & end >= ' + str(end-margin) + \
-                ' & chr == "' + chr + '" & strand == ' + str(strand) + '' + \
+        # query = 'start <= ' + str(start+margin) + ' & end >= ' + str(end-margin) + \
+        #         ' & chr == "' + chr + '" & strand == ' + str(strand) + '' + \
+        #         ' & (end-start) >= ' + str(self.minreadlen)
+        query = ' chr == "' + chr + '" & strand == ' + str(strand) + '' + \
                 ' & (end-start) >= ' + str(self.minreadlen)
 
-        # print(query)
-        # print(self.indexdf)
+        print(query)
+        print(self.indexdf)
         pqfiles = self.indexdf.query(query)
         #
+        print("pqfiles",pqfiles)
         sortedfile = self.getFilePathList(self.path)
 
         #
@@ -408,6 +411,8 @@ class PqReader:
                 dataadd = pq.read_table(filepath, columns=['read_no','read_id', 'chr', 'strand', 'start', 'end']).to_pandas()
                 dataadd['fileidx'] = fileidx
                 indexdata = pd.concat([indexdata, dataadd])
+
+            print("indexdata len",len(indexdata))
 
         # get reads ids for bufferted position (start,end)
         # start = pos
