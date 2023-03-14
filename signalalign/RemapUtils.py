@@ -201,7 +201,9 @@ def getBase(trace,b4,bb,strand):
     nuc = label[midx]
 
     return nuc
+from numba import jit
 
+@jit
 def toCompact(trace,possiblemove_idx,frombasecaller_idx):
 
     intervallen = len(possiblemove_idx)

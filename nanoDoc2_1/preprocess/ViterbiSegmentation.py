@@ -45,6 +45,7 @@ def flipplopViterbiEach(lgenome, chrom, strand, orgcigar,r_st, r_en, q_st, q_en,
     seq, cigar, left, traceoffset, traceboundary = viterbi(lgenome, compactTrace, trace, compactTracePositionMap,
                                                            strand,orgcigar, q_st, q_en,
                                                            possiblemove_idx, frombasecaller_idx)
+
     return seq, cigar, left, traceoffset, traceboundary, frombasecaller_idx, possiblemove_idx
 
 
@@ -89,10 +90,10 @@ def correctCigar(targetPos, cigar):
 
 def viterbi(lgenome, compactTrace, trace, compactTracePositionMap, strand,orgcigar, q_st, q_en, possiblemove_idx,
             frombasecaller_idx):
+
     ctstart = ru.getNear(compactTracePositionMap, q_st)
-    # print(compactTracePositionMap)
     ctend = ru.getNear(compactTracePositionMap, q_en)
-    # print("ct_starte_end",q_st,q_en,ctstart,ctend)
+
     #
     ctlen = len(compactTrace)
     ctstart = 0
@@ -102,7 +103,6 @@ def viterbi(lgenome, compactTrace, trace, compactTracePositionMap, strand,orgcig
     m_range = List()
     for n in range(q_en - q_st):
         l = correctCigar(n,orgcigar)
-        # print("cigar",orgcigar,n,l)
         m = ru.getNear(compactTracePositionMap, q_st+l) - ctstart
         m_range.append(m)
 
@@ -257,7 +257,8 @@ MAXDEL_SIZE = 50
 LOW_THRES_FOR_DEFULT_TRANS_PROP = 0.8
 BONUS_FOR_EACH_SEGMENT = 0.1
 count = 0
-bannedinterval = 100
+bannedinterval = 80
+
 
 @numba.jit(nopython=True)
 def rangeCheck(n, m, m_range):
@@ -272,9 +273,28 @@ def rangeCheck(n, m, m_range):
     if diff < 15:
         wscore = 1 - 0.05 * diff
 
-    return inrange, wscore
+    border = False
+    if inrange == False:
+        border = diff < bannedinterval
+    return inrange, wscore, border
 
+@numba.jit(nopython=True)
+def getMRange(n, m_range,intervallen):
 
+    if n > len(m_range) - 1:
+        m_in_alinment = m_range[len(m_range) - 1]
+    else:
+        m_in_alinment = m_range[n]
+    start = m_in_alinment - bannedinterval
+    end = m_in_alinment + bannedinterval
+    if start < 0:
+        start = 0
+    if end > intervallen:
+        end = intervallen
+    return start,end
+
+from numba import objmode
+import time
 @numba.jit(nopython=True)
 def viterbiEach(compactTrace, localgenome, possiblemove_idx, frombasecaller_idx, ctstart, m_range):
 
@@ -282,29 +302,35 @@ def viterbiEach(compactTrace, localgenome, possiblemove_idx, frombasecaller_idx,
     genomelen = len(localgenome)
 
     scorematrix = np.zeros((genomelen, intervallen), dtype='float32')
-    movematrix = np.zeros((genomelen, intervallen), dtype='float32')
+    movematrix = np.ones((genomelen, intervallen), dtype='uint8') # defult DIOGONAL move
     # score matrix
     maxscore = 0
     penalty = 0.05
 
+    with objmode(t1='f8'):
+        t1 = time.perf_counter()
 
     (maxn, maxm) = (0, 0)
 
     for n in range(genomelen):
-        for m in range(intervallen):
 
-            inrange, wscore = rangeCheck(n, m, m_range)
+        start,end = getMRange(n, m_range,intervallen)
+        mrange = range(start,end)
+        # print("in range",n,start,end)
+        for m in mrange:
+
+            inrange, wscore, border = rangeCheck(n, m, m_range)
             if inrange:
                 if m == 0:
 
-                    scorematrix[n][m] = ru.getStateProb(localgenome, compactTrace, n, m)
+                    scorematrix[n][m] = round(ru.getStateProb(localgenome, compactTrace, n, m),2)
 
                 else:
 
                     stateP = ru.getStateProb(localgenome, compactTrace, n, m)
                     if n == 0:
                         unTransScore = scorematrix[n][m - 1] + stateP
-                        scorematrix[n][m] = unTransScore
+                        scorematrix[n][m] = round(unTransScore,2)
                         movematrix[n][m] = HORIZONTAL_MOVE
 
                     unTransScore = scorematrix[n][m - 1] + stateP - penalty
@@ -325,20 +351,20 @@ def viterbiEach(compactTrace, localgenome, possiblemove_idx, frombasecaller_idx,
                                 maxdin = dlen
 
                     if transScore > unTransScore and transScore > maxdscore:
-                        scorematrix[n][m] = transScore
+                        scorematrix[n][m] = round(transScore,2)
                         movematrix[n][m] = DIOGONAL_MOVE
 
                         # if debug:
                         #     print(n,m,"diogonal",transScore,wscore)
 
                     elif unTransScore > maxdscore:
-                        scorematrix[n][m] = unTransScore
+                        scorematrix[n][m] = round(unTransScore,2)
                         movematrix[n][m] = HORIZONTAL_MOVE
                         # if debug:
                         #     print(n,m,"untrans",unTransScore,wscore)
 
                     else:
-                        scorematrix[n][m] = maxdscore
+                        scorematrix[n][m] = round(maxdscore,2)
                         movematrix[n][m] = SKIP_MOVE_BASE + maxdin
                         # if debug:
                         #     print(n,m,"SKIPBASE",maxdscore,wscore)
@@ -401,6 +427,11 @@ def viterbiEach(compactTrace, localgenome, possiblemove_idx, frombasecaller_idx,
     scorematrix_os = None
     movematrix = None
     # print("tracebackPath,left",left)
+
+    with objmode(t2='f8'):
+        t2 = time.perf_counter()
+    print("maxscore",maxscore,genomelen,t2-t1)
+
     return tracebackPath, left
 
 

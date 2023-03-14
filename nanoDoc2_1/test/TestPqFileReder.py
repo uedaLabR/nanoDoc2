@@ -60,6 +60,7 @@ def plotGraph(traces,signals,rseq,infos,fp):
         i = 0
         for atrace in trace:
 
+            print(atrace)
             ax2.plot(atrace, color=base_color[base_corresponding_table[i]],linewidth=1)
             i +=1
 
@@ -85,7 +86,6 @@ if __name__ == "__main__":
     # pathout = '/data/nanopore/nanoDoc2_1/testrun2/ecoli'
     # #ref = "/data/nanopore/reference/NC000913.fa"
     ref = "/data/nanopore/nanoDoc2_1/testrun/ecolirRNA.fa"
-
 
     out = "/data/nanopore/nanoDoc2_1/error.txt"
 

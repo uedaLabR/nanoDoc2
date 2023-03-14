@@ -54,6 +54,7 @@ def getSD(cnt, coeffA, coeffB):
 
 def callPlusStrand(wfile, uplimit, seq, refpr, targetpr, model_t, fw, chrom,chromtgt,start, end):
 
+    print(start,end)
     strand = "+"
     res = None #faiss.StandardGpuResources()
     for n in range(start, end-10):
@@ -245,6 +246,7 @@ def eachProcess(wfile, n, start,subs, strand, uplimit, refpr, targetpr,
         # reference signal
         retraces,refdatas, cntref, reinfos = refpr.getRowData(chrom, strand, n, cnt)
     except:
+        print("exception")
         infos = "{0}\t{1}\t{2}\t{3}\t{4}".format(n+posadjust, str(subs), 0, 0,  0)
         print(infos)
         fw.writelines(infos + "\n")
@@ -319,8 +321,9 @@ def modCall(wfile, ref, refpq, targetpq, out, chrom, chromtgt, start, end, minre
     if end < 0:
         end = len(seq)
 
-    refpr = PqReader(refpq, ref,minreadlen,strand, start, end, maxreads = uplimit,IndelStrict=True) # Assume
-    targetpr = PqReader(targetpq,ref,minreadlen,strand, start, end ,maxreads = uplimit,IndelStrict=True)
+    print("start,end",start,end)
+    refpr = PqReader(refpq, ref,minreadlen,chrom,strand, start, end, maxreads = uplimit,IndelStrict=True) # Assume
+    targetpr = PqReader(targetpq,ref,minreadlen,chrom,strand, start, end ,maxreads = uplimit,IndelStrict=True)
     model_t = getModel()
 
     fw = open(out, mode='w')

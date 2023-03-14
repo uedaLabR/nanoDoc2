@@ -378,7 +378,7 @@ class PqReader:
     def load(self,chr, start,end, strand):
 
         print("loding data")
-        print(chr)
+        print(chr,start,end)
         strand = True
         self.loadchr = chr
         margin = 200
@@ -386,12 +386,11 @@ class PqReader:
                 ' & chr == "' + chr + '" & strand == ' + str(strand) + '' + \
                 ' & (end-start) >= ' + str(self.minreadlen)
 
-        print(query)
-        print(self.indexdf)
+        # print(query)
+        # print(self.indexdf)
         pqfiles = self.indexdf.query(query)
         #
         sortedfile = self.getFilePathList(self.path)
-        #print(sortedfile)
 
         #
         indexdata = None
@@ -399,6 +398,7 @@ class PqReader:
 
             fileidx = row['fileidx']
             filepath = sortedfile[fileidx]
+            # print("filepath",filepath)
             if indexdata is None:
 
                 indexdata = pq.read_table(filepath, columns=['read_no','read_id', 'chr', 'strand', 'start', 'end']).to_pandas()
@@ -416,6 +416,7 @@ class PqReader:
         # if not strand:
         #     start = pos - self.samplelen
         #     end = pos
+        # print("indexdata", indexdata)
 
         readsIndex = None
         ntake = self.maxreads
@@ -426,19 +427,21 @@ class PqReader:
         rlist = list(range(start,end,10))
         if not strand:
             rlist.reverse()
+        # print("rlist",start,end,rlist)
 
         for pos2 in rlist:
 
+            print("pos2",pos2)
             addIndex = self.randomsample(pos2, indexdata, ntake, readsIndex)
             if readsIndex is None:
                 readsIndex = addIndex
             elif addIndex is not None:
 
-                print("addIndex")
-                print(pos2, addIndex)
+                # print("addIndex")
+                # print(pos2, addIndex)
                 readsIndex = pd.concat([readsIndex, addIndex])
 
-
+        # print("readsIndex",readsIndex)
         if readsIndex is None:
             return None
 
@@ -461,7 +464,9 @@ class PqReader:
 
         dataWithRow['traceintervals'] = dataWithRow['traceintervals'] .apply(intervalToAbsolute)
         self.bufferData = dataWithRow
-
+        # print("data with row")
+        print(dataWithRow['start'])
+        print(dataWithRow['end'])
 
     def getRowData(self, chr, strand, pos,takecnt=-1):
 

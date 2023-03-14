@@ -56,7 +56,7 @@ def preprocess(f5file,pathout,ref,ncore,qvaluethres,fmercurrent,mappyoption):
                     q_st = hit.q_st
                     q_en = hit.q_en
                     cigar_str = hit.cigar_str
-                    print(chrom,strand,r_st,r_en)
+                    print(chrom,strand,r_st,r_en,cigar_str)
                     read = nanoDocRead(read.read_id, chrom, strand, r_st, r_en, q_st, q_en, cigar_str, fastq, trace, move,
                                 row_data)
 
@@ -122,7 +122,7 @@ def _mergeParquet(dirinfo):
 
     file_out = dir+".pq"
     FileIO.writeToPqWithIdx(df_s, file_out)
-    shutil.rmtree(dir)
+    # shutil.rmtree(dir)
 
 def mergeParquet(pathout,ncore):
 
@@ -152,6 +152,7 @@ def h5tosegmantedPq(path,pathout,ref,MAX_CORE,qvaluethres,fmercurrent,mappyoptio
         print(cnt,f5file)
         preprocess(f5file,pathout,ref,ncore,qvaluethres,fmercurrent,mappyoption)
         cnt += 1
+        break
 
     #marge Parquet
     print("merge files")

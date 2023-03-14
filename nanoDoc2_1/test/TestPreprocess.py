@@ -8,9 +8,17 @@ if __name__ == "__main__":
     MAX_CORE = 24
     qvaluethres = 5
     fmercurrent = "/data/nanopore/signalStatRNA180.txt"
+    import cProfile, pstats, io
+    pr = cProfile.Profile()
+    pr.enable()
 
     fast5ToProcessedPq.h5tosegmantedPq(path, pathout, ref, MAX_CORE, qvaluethres, fmercurrent, (12, 10, 30, 20))
 
+    pr.disable()
+    s = io.StringIO()
+    ps = pstats.Stats(pr, stream=s)
+    ps.print_stats()
+    print(s.getvalue())
 
     # path = '/data/nanopore/rRNA/1623_ivt-multi/multifast5_2/workspace'
     # pathout = '/data/nanopore/nanoDoc2_1/varidate/1623_ivt'
