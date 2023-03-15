@@ -339,6 +339,7 @@ class PqReader:
 
         if indexes is None:
 
+
             #print('init read')
             if data is None:
                 return None
@@ -356,22 +357,28 @@ class PqReader:
 
         else:
 
-            dataposprev = indexes.query('start <=' + str(pos-self.takemarginb4) + ' & end >=' + str(pos+self.takemargin)+" & (end-start) > "+str(self.minreadlen))
-            if len(dataposprev) <= ntake:
+            query = 'start <=' + str(pos) + ' & end >=' + str(pos) + " & (end-start) > " + str(self.minreadlen)
+            # query = ' (end-start) > ' + str(self.minreadlen)
+            print(query)
+            dataposprev = indexes.query(query)
+            print(pos,len(dataposprev))
+            if len(dataposprev) > ntake:
                 return None
 
             else:
-                datainpos = data.query('start <=' + str(pos-self.takemarginb4) + ' & end >=' + str(pos+self.takemargin)+" & (end-start) > "+str(self.minreadlen))
 
+                datainpos = data.query(query)
+                # print(datainpos)
                 df_alreadyhave = dataposprev['read_no']
                 datainpos = datainpos[~datainpos.read_no.isin(df_alreadyhave)]
                 cnt = ntake - len(df_alreadyhave)
+                print("cnt",cnt)
                 if (cnt > 0) and (cnt <= len(datainpos)):
                     datainpos = datainpos.sample(n=cnt)
-                    #datainpos = datainpos.head(cnt)
-                    return datainpos
-
-                return None
+                #datainpos = datainpos.head(cnt)
+                return datainpos
+                # print("rs5")
+                # return None
 
 
 
@@ -434,16 +441,18 @@ class PqReader:
             rlist.reverse()
         # print("rlist",start,end,rlist)
 
+        print("id",len(indexdata))
+
         for pos2 in rlist:
 
             print("pos2",pos2)
             addIndex = self.randomsample(pos2, indexdata, ntake, readsIndex)
+            print("addIndex",addIndex)
             if readsIndex is None:
                 readsIndex = addIndex
             elif addIndex is not None:
 
-                # print("addIndex")
-                # print(pos2, addIndex)
+                print(pos2, len(addIndex))
                 readsIndex = pd.concat([readsIndex, addIndex])
 
         # print("readsIndex",readsIndex)
