@@ -44,7 +44,7 @@ To download the pre-learned weight, execute the following command:
 (venv3) $ cd weight6mer
 (venv3) $ wget https://zenodo.org/record/6583336/files/weight_A.tar.gz .
 (venv3) $ wget https://zenodo.org/record/6586529/files/weight_T.tar.gz .
-~~(venv3) $ wget https://zenodo.org/record/6587256/files/weight_C.tar.gz .~~
+~~`(venv3) $ wget https://zenodo.org/record/6587256/files/weight_C.tar.gz .`~~
 (venv3) $ wget https://zenodo.org/record/8173607/files/weight_C.tar.gz .
 (venv3) $ wget https://zenodo.org/record/6588796/files/weight_G.tar.gz .
 (venv3) $ tar -zxvf ./weight_A.tar.gz
