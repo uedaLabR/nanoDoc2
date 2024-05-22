@@ -359,7 +359,7 @@ class PqReader:
 
             query = 'start <=' + str(pos) + ' & end >=' + str(pos) + " & (end-start) > " + str(self.minreadlen)
             # query = ' (end-start) > ' + str(self.minreadlen)
-            print(query)
+            # print(query)
             dataposprev = indexes.query(query)
             print(pos,len(dataposprev))
             if len(dataposprev) > ntake:
@@ -384,8 +384,8 @@ class PqReader:
 
     def load(self,chr, start,end, strand):
 
-        print("loding data")
-        print(chr,start,end)
+        # print("loding data")
+        # print(chr,start,end)
         strand = True
         self.loadchr = chr
         margin = 200
@@ -395,11 +395,11 @@ class PqReader:
         query = ' chr == "' + chr + '" & strand == ' + str(strand) + '' + \
                 ' & (end-start) >= ' + str(self.minreadlen)
 
-        print(query)
-        print(self.indexdf)
+        # print(query)
+        # print(self.indexdf)
         pqfiles = self.indexdf.query(query)
         #
-        print("pqfiles",pqfiles)
+        # print("pqfiles",pqfiles)
         sortedfile = self.getFilePathList(self.path)
 
         #
@@ -419,7 +419,7 @@ class PqReader:
                 dataadd['fileidx'] = fileidx
                 indexdata = pd.concat([indexdata, dataadd])
 
-            print("indexdata len",len(indexdata))
+            # print("indexdata len",len(indexdata))
 
         # get reads ids for bufferted position (start,end)
         # start = pos
@@ -441,18 +441,18 @@ class PqReader:
             rlist.reverse()
         # print("rlist",start,end,rlist)
 
-        print("id",len(indexdata))
+        # print("id",len(indexdata))
 
         for pos2 in rlist:
 
-            print("pos2",pos2)
+            # print("pos2",pos2)
             addIndex = self.randomsample(pos2, indexdata, ntake, readsIndex)
-            print("addIndex",addIndex)
+            # print("addIndex",addIndex)
             if readsIndex is None:
                 readsIndex = addIndex
             elif addIndex is not None:
 
-                print(pos2, len(addIndex))
+                # print(pos2, len(addIndex))
                 readsIndex = pd.concat([readsIndex, addIndex])
 
         # print("readsIndex",readsIndex)
@@ -479,8 +479,8 @@ class PqReader:
         dataWithRow['traceintervals'] = dataWithRow['traceintervals'] .apply(intervalToAbsolute)
         self.bufferData = dataWithRow
         # print("data with row")
-        print(dataWithRow['start'])
-        print(dataWithRow['end'])
+        # print(dataWithRow['start'])
+        # print(dataWithRow['end'])
 
     def getRowData(self, chr, strand, pos,takecnt=-1):
 

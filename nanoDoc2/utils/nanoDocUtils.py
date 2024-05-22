@@ -3,12 +3,10 @@ from sklearn.model_selection import train_test_split
 def getCurrentDict(fmercurrent):
     a = {}
     with open(fmercurrent) as f:
-        cnt = 0
         for line in f:
-            if cnt > 0:
+            if not line.startswith("#"):
                 data = line.split()
                 a[data[0]] = float(data[1])
-            cnt = cnt + 1
     return a
 
 
