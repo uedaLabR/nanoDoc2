@@ -44,7 +44,7 @@ To download the pre-learned weight, execute the following command:
 (venv3) $ cd weight6mer
 (venv3) $ wget https://zenodo.org/record/6583336/files/weight_A.tar.gz .
 (venv3) $ wget https://zenodo.org/record/6586529/files/weight_T.tar.gz .
-~~`(venv3) $ wget https://zenodo.org/record/6587256/files/weight_C.tar.gz .`~~
+~~(venv3) $ wget https://zenodo.org/record/6587256/files/weight_C.tar.gz .~~
 (venv3) $ wget https://zenodo.org/record/8173607/files/weight_C.tar.gz .
 (venv3) $ wget https://zenodo.org/record/6588796/files/weight_G.tar.gz .
 (venv3) $ tar -zxvf ./weight_A.tar.gz
@@ -215,7 +215,9 @@ The output weights of this training are saved and later used for inference (as d
 
 1. Most updated versions of TensorFlow and Cuda can be used even though they are not tested. Keras 2.3 is also required in addition to TensorFlow for the reason that Keras library is required to build a joint network used in doc training.
 2. Reference sequence used in this study are deposited in the GitHub repository.
-3. The k-mer model downloaded from the link: [https://github.com/nanoporetech/kmer_models/blob/master/r9.4_180mv_70bps_5mer_RNA/template_median69pA.model]()
-3. Minimap2 parameters can be loosened for heavily modified RNA sequences.<br>Parameters for minimap can be set in the "-mo" option in the ‘fast5ToReSegmentedPq’ command described above. One could decrease those parameters if RNA is basecalled with a lot of error caused by heavy modifications.
-4. Current version is only applicable to plus strand, i.e. users need to prepare transcript sequence as a reference.
-5. Method *does not have single-base resolution*. **-4 to +2 position should also be considered** as a candidate for modification sites.
+3. The k-mer model downloaded from the link:
+   ~~[https://github.com/nanoporetech/kmer_models/blob/master/r9.4_180mv_70bps_5mer_RNA/template_median69pA.model]~~
+   [https://github.com/nanoporetech/kmer_models/blob/master/rna_r9.4_180mv_70bps/5mer_levels_v1.txt]
+4. Minimap2 parameters can be loosened for heavily modified RNA sequences.<br>Parameters for minimap can be set in the "-mo" option in the ‘fast5ToReSegmentedPq’ command described above. One could decrease those parameters if RNA is basecalled with a lot of error caused by heavy modifications.
+5. Current version is only applicable to plus strand, i.e. users need to prepare transcript sequence as a reference.
+6. Method *does not have single-base resolution*. **-4 to +2 position should also be considered** as a candidate for modification sites.
